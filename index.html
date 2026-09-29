@@ -74,7 +74,9 @@
   #mascot[data-mood="normal"] .pose-front,
   #mascot[data-mood="happy"] .pose-front,
   #mascot[data-mood="wow"] .pose-side,
-  #mascot[data-mood="sad"] .pose-back { display: block; }
+  #mascot[data-mood="sad"] .pose-side { display: block; }
+  /* 難過時：側身、低頭、顏色變淡（不使用背面） */
+  #mascot[data-mood="sad"] .pose-side, .mini.droop { transform: rotate(10deg) translateY(4%); filter: saturate(.55) brightness(.97); }
 
   .stats {
     background: var(--panel); border-radius: 20px; padding: 12px 14px;
@@ -239,7 +241,6 @@
       <div id="mascot" data-mood="normal"><div class="mascot-float">
         <img class="pose pose-front" src="assets/cod-front.webp" alt="鱈魚大叔">
         <img class="pose pose-side" src="assets/cod-side.webp" alt="">
-        <img class="pose pose-back" src="assets/cod-back.webp" alt="">
       </div></div>
     </div>
     <div class="stats">
@@ -273,8 +274,8 @@
     { img: 'assets/tile-shrimp.webp',     color: '#ffb3cf', name: '蝦餅小子（正面）' },
     { img: 'assets/tile-horn.webp',       color: '#9fd4ff', name: '小角角（正面）' },
     { img: 'assets/tile-popcorn.webp',    color: '#d5c2ff', name: '糖霜米花' },
-    { img: 'assets/tile-horn-back.webp',  color: '#bdea8a', name: '小角角（背面）' },
-    { img: 'assets/tile-shrimp-back.webp', color: '#7fdcd0', name: '蝦餅小子（背面）' },
+    { img: 'assets/tile-horn-side.webp',   color: '#bdea8a', name: '小角角（側面）' },
+    { img: 'assets/tile-shrimp-side.webp', color: '#7fdcd0', name: '蝦餅小子（側面）' },
   ];
   const COLORS = TILES.map(t => t.color);
   // 角色設定：名字想改的話改這裡就好
@@ -285,7 +286,7 @@
     popcorn: { name: '糖霜米花', img: 'assets/popcorn.webp' },
   };
   // 預先載入圖片，避免第一次出現時閃一下
-  [...Object.values(CAST).map(c => c.img), ...TILES.map(t => t.img), 'assets/cod-side.webp', 'assets/cod-back.webp', 'assets/tile-cod-side.webp'].forEach(src => { new Image().src = src; });
+  [...Object.values(CAST).map(c => c.img), ...TILES.map(t => t.img), 'assets/cod-side.webp', 'assets/tile-cod-side.webp'].forEach(src => { new Image().src = src; });
   const boardEl = document.getElementById('board');
   const mascotEl = document.getElementById('mascot');
   const speechEl = document.getElementById('speech');
@@ -763,7 +764,7 @@
   }
 
   const mini = `<img class="mini" src="${CAST.cod.img}" alt="${CAST.cod.name}">`;
-  const miniBack = `<img class="mini" src="assets/cod-back.webp" alt="${CAST.cod.name}">`;
+  const miniSad = `<img class="mini droop" src="assets/cod-side.webp" alt="${CAST.cod.name}">`;
   function showDialog(html) { document.getElementById('dialog').innerHTML = html; document.getElementById('overlay').classList.add('show'); }
   function hideDialog() { document.getElementById('overlay').classList.remove('show'); }
 
@@ -782,7 +783,7 @@
   function loseLevel() {
     clearHint(); sfx.lose();
     say('嗚嗚…大叔的鬍子都垂下來了', 'sad', 'shake', 0);
-    showDialog(`${miniBack}<h2>步數用完了</h2><p>差一點點！還差 <b>${target - score}</b> 分<br>再試一次吧～</p>
+    showDialog(`${miniSad}<h2>步數用完了</h2><p>差一點點！還差 <b>${target - score}</b> 分<br>再試一次吧～</p>
       <button class="btn primary" id="retry">再挑戰一次</button>`);
     document.getElementById('retry').onclick = () => startLevel(level);
   }
@@ -792,7 +793,7 @@
       <div class="howto">
         <div>👆 滑動或點選兩個相鄰的角色交換位置</div>
         <div>✨ 三個以上同樣的排成一線就會消除</div>
-        <div>👀 正面和背面是<b>不同</b>的方塊，看盤子的顏色和形狀最好認</div>
+        <div>👀 正面和側面是<b>不同</b>的方塊，看盤子的顏色和形狀最好認</div>
         <div>➖ 連成 4 個 → <b>條紋方塊</b>，直線清除一整排</div>
         <div>💥 排成 L 或 T 形 → <b>發光方塊</b>，炸開周圍 3×3</div>
         <div><img src="assets/tile-cod-side.webp" alt=""> 連成 5 個 → <b>彩虹${CAST.cod.name}</b>！和任何方塊交換，同一種全部消光</div>
