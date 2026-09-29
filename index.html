@@ -122,7 +122,10 @@
   }
   .tile.fall { transition: transform .32s cubic-bezier(.45,.05,.55,1.35); }
   .tile .inner { position: absolute; inset: 7%; transition: transform .15s ease; }
-  .tile svg { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 3px 0 rgba(0,0,0,.12)); }
+  .tile .plate { position: absolute; inset: -2%; width: 104%; height: 104%; overflow: visible; }
+  .tile .plate use { stroke: #fff; stroke-width: 5; paint-order: stroke; }
+  .tile img.char { position: absolute; left: 12%; top: 9%; width: 76%; height: 80%; object-fit: contain; pointer-events: none;
+    filter: drop-shadow(0 2px 1px rgba(0,0,0,.18)); }
   .tile.selected .inner { transform: scale(1.15); animation: wiggle .5s ease-in-out infinite; }
   .tile.hint .inner { animation: wiggle .6s ease-in-out infinite; }
   @keyframes wiggle { 0%,100% { rotate: -6deg; } 50% { rotate: 6deg; } }
@@ -131,20 +134,24 @@
   .tile.born .inner { animation: born .35s ease; }
   @keyframes born { 0% { transform: scale(.2) rotate(-90deg); } 70% { transform: scale(1.25); } }
 
-  .tile img.char { width: 100%; height: 100%; object-fit: contain; display: block; position: relative; filter: drop-shadow(0 3px 0 rgba(0,0,0,.12)); pointer-events: none; }
-  .badge { position: absolute; right: -10%; bottom: -8%; width: 52%; height: 52%; object-fit: contain; pointer-events: none;
-    filter: drop-shadow(0 1px 1px rgba(0,0,0,.25)); animation: peek 1.4s ease-in-out infinite; }
-  @keyframes peek { 50% { transform: translateY(-8%) rotate(6deg); } }
   .cheer { position: absolute; width: 34%; left: 33%; top: 46%; pointer-events: none; z-index: 6;
     animation: cheer 1s ease forwards; filter: drop-shadow(0 6px 8px rgba(0,0,0,.2)); }
   @keyframes cheer { 0% { transform: translateY(40%) scale(.3); opacity: 0; } 30% { transform: translateY(0) scale(1.05); opacity: 1; } 75% { opacity: 1; } 100% { transform: translateY(-20%) scale(1); opacity: 0; } }
 
   /* 特殊方塊 */
-  .fx { position: absolute; inset: -4%; pointer-events: none; border-radius: 30%; }
-  .fx.row { background: repeating-linear-gradient(0deg, transparent 0 18%, rgba(255,255,255,.85) 18% 26%); mix-blend-mode: screen; }
-  .fx.col { background: repeating-linear-gradient(90deg, transparent 0 18%, rgba(255,255,255,.85) 18% 26%); mix-blend-mode: screen; }
-  .fx.area { box-shadow: 0 0 0 3px #fff, 0 0 14px 4px #fff7a8; animation: glow 1s ease-in-out infinite; }
-  .fx.bomb { box-shadow: 0 0 16px 6px rgba(255,236,150,.9); border-radius: 50%; animation: glow 1s ease-in-out infinite; }
+  .fx { position: absolute; inset: -4%; pointer-events: none; border-radius: 30%; z-index: 2; }
+  .fx.row { background: repeating-linear-gradient(0deg, transparent 0 20%, rgba(255,255,255,.75) 20% 27%); }
+  .fx.col { background: repeating-linear-gradient(90deg, transparent 0 20%, rgba(255,255,255,.75) 20% 27%); }
+  .fx.row::after, .fx.col::after {
+    content: "◀▶"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    font-size: 11px; letter-spacing: 16px; padding-left: 16px; color: #ff5e8e; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
+  .fx.col::after { content: "▲▼"; writing-mode: vertical-rl; letter-spacing: 16px; padding: 16px 0 0; }
+  .fx.area { box-shadow: 0 0 0 3px #fff, 0 0 14px 5px #ffe066; animation: glow 1s ease-in-out infinite; }
+  .fx.bomb { inset: -2%; border-radius: 50%; z-index: 0;
+    background: conic-gradient(#ff9ec7, #ffd84d, #8fe0a0, #7ec8ff, #c7a0ff, #ff9ec7);
+    box-shadow: 0 0 12px 4px rgba(255,236,150,.9); animation: spin 3s linear infinite; }
+  .fx.bomb::before { content: ""; position: absolute; inset: 12%; border-radius: 50%; background: #fffbea; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes glow { 50% { opacity: .5; } }
 
   .particle {
@@ -214,67 +221,13 @@
 <!-- 共用圖形 -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <g id="face">
-      <ellipse cx="37" cy="52" rx="6" ry="7" fill="#3b3048"/>
-      <ellipse cx="63" cy="52" rx="6" ry="7" fill="#3b3048"/>
-      <circle cx="39" cy="49.5" r="2.4" fill="#fff"/>
-      <circle cx="65" cy="49.5" r="2.4" fill="#fff"/>
-      <ellipse cx="27" cy="62" rx="6" ry="3.6" fill="#ff7aa8" opacity=".55"/>
-      <ellipse cx="73" cy="62" rx="6" ry="3.6" fill="#ff7aa8" opacity=".55"/>
-      <path d="M44 61 Q50 67 56 61" fill="none" stroke="#3b3048" stroke-width="3" stroke-linecap="round"/>
-    </g>
-
-    <!-- 0 粉紅小章魚 -->
-    <symbol id="t0" viewBox="0 0 100 100">
-      <path d="M18 62 Q16 12 50 12 Q84 12 82 62 L82 78 Q76 90 69 79 Q63 90 56 79 Q50 90 44 79 Q37 90 31 79 Q24 90 18 78 Z"
-            fill="#ff9ec7" stroke="#e8729f" stroke-width="3" stroke-linejoin="round"/>
-      <ellipse cx="36" cy="26" rx="10" ry="6" fill="#fff" opacity=".5"/>
-      <use href="#face" transform="translate(0,2)"/>
-    </symbol>
-    <!-- 1 黃色海星 -->
-    <symbol id="t1" viewBox="0 0 100 100">
-      <path d="M50 8 L61 36 L92 38 L68 58 L76 89 L50 72 L24 89 L32 58 L8 38 L39 36 Z"
-            fill="#ffd84d" stroke="#ffd84d" stroke-width="10" stroke-linejoin="round"/>
-      <path d="M50 8 L61 36 L92 38 L68 58 L76 89 L50 72 L24 89 L32 58 L8 38 L39 36 Z"
-            fill="none" stroke="#e8b52a" stroke-width="3" stroke-linejoin="round" transform="translate(50 50) scale(1.07) translate(-50 -50)"/>
-      <circle cx="30" cy="42" r="2.5" fill="#fff" opacity=".7"/><circle cx="70" cy="42" r="2.5" fill="#fff" opacity=".7"/>
-      <circle cx="50" cy="24" r="2.5" fill="#fff" opacity=".7"/>
-      <use href="#face" transform="translate(12.5,6) scale(.75)"/>
-    </symbol>
-    <!-- 2 藍色泡泡 -->
-    <symbol id="t2" viewBox="0 0 100 100">
-      <circle cx="50" cy="52" r="38" fill="#7ec8ff" stroke="#4fa6e6" stroke-width="3"/>
-      <path d="M26 38 Q32 24 46 21" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".85"/>
-      <circle cx="70" cy="30" r="4" fill="#fff" opacity=".8"/>
-      <use href="#face" transform="translate(0,4)"/>
-    </symbol>
-    <!-- 3 橘色扇貝 -->
-    <symbol id="t3" viewBox="0 0 100 100">
-      <path d="M50 88 L40 80 L14 50 Q16 14 50 12 Q84 14 86 50 L60 80 Z" fill="#ffab6b" stroke="#e8864a" stroke-width="3" stroke-linejoin="round"/>
-      <path d="M50 84 L50 14 M50 84 L30 18 M50 84 L70 18 M50 84 L16 38 M50 84 L84 38" stroke="#ffc796" stroke-width="3" opacity=".8"/>
-      <rect x="38" y="80" width="24" height="10" rx="4" fill="#e8864a"/>
-      <use href="#face" transform="translate(0,-4)"/>
-    </symbol>
-    <!-- 4 綠色河豚 -->
-    <symbol id="t4" viewBox="0 0 100 100">
-      <g fill="#6cc987">
-        <path d="M50 6 L56 18 L44 18 Z"/><path d="M50 96 L56 84 L44 84 Z"/>
-        <path d="M6 50 L18 44 L18 56 Z"/><path d="M94 50 L82 44 L82 56 Z"/>
-        <path d="M18 18 L30 23 L23 30 Z"/><path d="M82 18 L70 23 L77 30 Z"/>
-        <path d="M18 82 L30 77 L23 70 Z"/><path d="M82 82 L70 77 L77 70 Z"/>
-      </g>
-      <circle cx="50" cy="51" r="34" fill="#8fe0a0" stroke="#5fbf7a" stroke-width="3"/>
-      <ellipse cx="50" cy="70" rx="22" ry="12" fill="#e9fbe9"/>
-      <use href="#face" transform="translate(0,-2)"/>
-    </symbol>
-    <!-- 5 紫色愛心 -->
-    <symbol id="t5" viewBox="0 0 100 100">
-      <path d="M50 88 C12 64 6 36 22 22 C34 12 46 18 50 28 C54 18 66 12 78 22 C94 36 88 64 50 88 Z"
-            fill="#c7a0ff" stroke="#9f74e6" stroke-width="3" stroke-linejoin="round"/>
-      <ellipse cx="30" cy="30" rx="7" ry="4.5" fill="#fff" opacity=".6" transform="rotate(-30 30 30)"/>
-      <use href="#face" transform="translate(0,-2)"/>
-    </symbol>
-
+    <!-- 每種消除方塊底下的小盤子：顏色＋形狀都不同，比較好分辨 -->
+    <symbol id="p0" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44"/></symbol>
+    <symbol id="p1" viewBox="0 0 100 100"><rect x="8" y="8" width="84" height="84" rx="22"/></symbol>
+    <symbol id="p2" viewBox="0 0 100 100"><path d="M50 4 L90 27 L90 73 L50 96 L10 73 L10 27 Z" stroke-linejoin="round" stroke-width="8"/></symbol>
+    <symbol id="p3" viewBox="0 0 100 100"><path d="M50 6 C60 6 64 16 72 18 C80 20 90 18 92 30 C94 40 86 44 88 52 C90 60 96 66 90 76 C84 86 74 80 66 86 C58 92 56 96 50 96 C44 96 42 92 34 86 C26 80 16 86 10 76 C4 66 10 60 12 52 C14 44 6 40 8 30 C10 18 20 20 28 18 C36 16 40 6 50 6 Z"/></symbol>
+    <symbol id="p4" viewBox="0 0 100 100"><rect x="13" y="13" width="74" height="74" rx="14" transform="rotate(45 50 50)"/></symbol>
+    <symbol id="p5" viewBox="0 0 100 100"><rect x="4" y="16" width="92" height="68" rx="34"/></symbol>
   </defs>
 </svg>
 
@@ -314,7 +267,16 @@
 <script>
 (() => {
   const N = 8, TYPES = 6, MOVES = 25;
-  const COLORS = ['#ff9ec7', '#ffd84d', '#7ec8ff', '#ffab6b', '#8fe0a0', '#c7a0ff'];
+  // 六種消除方塊：用吉祥物的三視圖，底下墊不同顏色與形狀的盤子
+  const TILES = [
+    { img: 'assets/tile-cod.webp',        color: '#ffe27a', name: '鱈魚大叔（正面）' },
+    { img: 'assets/tile-shrimp.webp',     color: '#ffb3cf', name: '蝦餅小子（正面）' },
+    { img: 'assets/tile-horn.webp',       color: '#9fd4ff', name: '小角角（正面）' },
+    { img: 'assets/tile-popcorn.webp',    color: '#d5c2ff', name: '糖霜米花' },
+    { img: 'assets/tile-horn-back.webp',  color: '#bdea8a', name: '小角角（背面）' },
+    { img: 'assets/tile-shrimp-back.webp', color: '#7fdcd0', name: '蝦餅小子（背面）' },
+  ];
+  const COLORS = TILES.map(t => t.color);
   // 角色設定：名字想改的話改這裡就好
   const CAST = {
     cod:     { name: '鱈魚大叔', img: 'assets/cod-front.webp' },
@@ -323,7 +285,7 @@
     popcorn: { name: '糖霜米花', img: 'assets/popcorn.webp' },
   };
   // 預先載入圖片，避免第一次出現時閃一下
-  [...Object.values(CAST).map(c => c.img), 'assets/cod-side.webp', 'assets/cod-back.webp'].forEach(src => { new Image().src = src; });
+  [...Object.values(CAST).map(c => c.img), ...TILES.map(t => t.img), 'assets/cod-side.webp', 'assets/cod-back.webp', 'assets/tile-cod-side.webp'].forEach(src => { new Image().src = src; });
   const boardEl = document.getElementById('board');
   const mascotEl = document.getElementById('mascot');
   const speechEl = document.getElementById('speech');
@@ -375,11 +337,11 @@
   /* ---------- 方塊 ---------- */
   function tileHTML(t) {
     if (t.special === 'bomb')
-      return `<div class="inner"><div class="fx bomb"></div><img class="char" src="${CAST.cod.img}" alt="" draggable="false"></div>`;
+      return `<div class="inner"><div class="fx bomb"></div><img class="char" src="assets/tile-cod-side.webp" alt="" draggable="false"></div>`;
+    const d = TILES[t.type];
     const fx = t.special ? `<div class="fx ${t.special}"></div>` : '';
-    const who = t.special === 'row' || t.special === 'col' ? CAST.shrimp : t.special === 'area' ? CAST.horn : null;
-    const badge = who ? `<img class="badge" src="${who.img}" alt="" draggable="false">` : '';
-    return `<div class="inner"><svg viewBox="0 0 100 100"><use href="#t${t.type}"/></svg>${fx}${badge}</div>`;
+    return `<div class="inner"><svg class="plate" viewBox="0 0 100 100"><use href="#p${t.type}" fill="${d.color}"/></svg>` +
+      `<img class="char" src="${d.img}" alt="" draggable="false">${fx}</div>`;
   }
   function setPos(el, r, c) { el.style.transform = `translate(${c * 100}%, ${r * 100}%)`; }
   function makeTile(type, special, r, c, startRow = r) {
@@ -647,7 +609,7 @@
         say(line || '好棒棒！', combo >= 4 ? 'wow' : 'happy');
       } else if (creates.size) {
         const s = [...creates.values()][0].special;
-        say(s === 'bomb' ? '大叔登場！交給我！' : s === 'area' ? `${CAST.horn.name}來幫忙了！砰砰砰～` : `${CAST.shrimp.name}衝啊！一條線掃光光！`, 'happy');
+        say(s === 'bomb' ? '彩虹大叔登場！交給我！' : s === 'area' ? '發光炸彈！砰砰砰～' : '條紋方塊！一條線掃光光！', 'happy');
       }
       await clearCells(clear, creates, combo);
       await gravity();
@@ -828,11 +790,12 @@
     const cast = Object.values(CAST).map(c => `<figure><img src="${c.img}" alt="">${c.name}</figure>`).join('');
     return `<div class="cast">${cast}</div><h2>鱈魚大叔消消樂</h2>
       <div class="howto">
-        <div>👆 滑動或點選兩個相鄰的海洋朋友交換位置</div>
+        <div>👆 滑動或點選兩個相鄰的角色交換位置</div>
         <div>✨ 三個以上同樣的排成一線就會消除</div>
-        <div><img src="${CAST.shrimp.img}" alt=""> 連成 4 個 → <b>${CAST.shrimp.name}</b>，直線清除一整排</div>
-        <div><img src="${CAST.horn.img}" alt=""> 排成 L 或 T 形 → <b>${CAST.horn.name}</b>，炸開周圍 3×3</div>
-        <div><img src="${CAST.cod.img}" alt=""> 連成 5 個 → <b>${CAST.cod.name}</b>！和任何方塊交換，同色全部消光</div>
+        <div>👀 正面和背面是<b>不同</b>的方塊，看盤子的顏色和形狀最好認</div>
+        <div>➖ 連成 4 個 → <b>條紋方塊</b>，直線清除一整排</div>
+        <div>💥 排成 L 或 T 形 → <b>發光方塊</b>，炸開周圍 3×3</div>
+        <div><img src="assets/tile-cod-side.webp" alt=""> 連成 5 個 → <b>彩虹${CAST.cod.name}</b>！和任何方塊交換，同一種全部消光</div>
         <div><img src="${CAST.popcorn.img}" alt=""> 連鎖 3 次以上，<b>${CAST.popcorn.name}</b>會跳出來幫你歡呼</div>
         <div>🎯 在步數用完之前達到目標分數就過關</div>
       </div>
