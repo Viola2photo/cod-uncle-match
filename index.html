@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>鱈魚大叔消消樂</title>
+<style>
+  :root {
+    --sea-top: #bfe9ff;
+    --sea-bottom: #7cc6f0;
+    --ink: #3b4a6b;
+    --panel: rgba(255, 255, 255, 0.78);
+    --board: rgba(255, 255, 255, 0.45);
+    --cell: rgba(255, 255, 255, 0.55);
+    --accent: #ff8fb8;
+    --gold: #ffcc4d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+    color: var(--ink);
+    background: linear-gradient(180deg, var(--sea-top), var(--sea-bottom));
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 背景泡泡 */
+  .bg-bubble {
+    position: fixed; bottom: -40px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #fff, rgba(255,255,255,0.25) 60%, rgba(255,255,255,0.1));
+    animation: rise linear infinite; pointer-events: none; opacity: .7;
+  }
+  @keyframes rise { to { transform: translateY(-110vh) translateX(20px); } }
+
+  .app {
+    position: relative; height: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 24px;
+    padding: 16px;
+  }
+
+  /* 側邊面板 */
+  .side {
+    width: 260px; display: flex; flex-direction: column; gap: 12px; align-items: stretch;
+  }
+  .title {
+    text-align: center; font-size: 26px; font-weight: 900; letter-spacing: 2px;
+    color: #fff; text-shadow: 0 3px 0 #5aa7d6, 0 5px 10px rgba(0,0,0,.15);
+    margin: 0;
+  }
+  .mascot-box {
+    position: relative; background: var(--panel); border-radius: 24px; padding: 10px 8px 4px;
+    box-shadow: 0 6px 0 rgba(90,167,214,.35);
+  }
+  .speech {
+    position: relative; background: #fff; border-radius: 16px; padding: 8px 12px; font-weight: 700;
+    min-height: 40px; font-size: 15px; text-align: center; margin: 0 6px 4px;
+    box-shadow: 0 2px 0 #e3eef7;
+  }
+  .speech::after {
+    content: ""; position: absolute; left: 38%; bottom: -10px;
+    border: 6px solid transparent; border-top: 8px solid #fff;
+  }
+  #mascot { position: relative; width: 100%; aspect-ratio: 1 / 1; }
+  #mascot.bounce { animation: bounce .6s ease; }
+  #mascot.shake { animation: shake .5s ease; }
+  @keyframes bounce { 0%,100% { transform: translateY(0); } 30% { transform: translateY(-14px) rotate(-3deg); } 60% { transform: translateY(0) rotate(2deg); } }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .mascot-float { position: absolute; inset: 0; animation: float 3s ease-in-out infinite; transform-origin: bottom center; }
+  @keyframes float { 50% { transform: translateY(-5px) scaleY(1.02); } }
+  #mascot .pose { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: none; }
+  #mascot[data-mood="normal"] .pose-front,
+  #mascot[data-mood="happy"] .pose-front,
+  #mascot[data-mood="wow"] .pose-side,
+  #mascot[data-mood="sad"] .pose-back { display: block; }
+
+  .stats {
+    background: var(--panel); border-radius: 20px; padding: 12px 14px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; text-align: center;
+    box-shadow: 0 6px 0 rgba(90,167,214,.35);
+  }
+  .stat .lbl { font-size: 12px; opacity: .7; font-weight: 700; }
+  .stat .val { font-size: 22px; font-weight: 900; }
+  .stat.moves .val { color: #ff6f9f; }
+  .progress {
+    grid-column: 1 / -1; height: 16px; background: #e6f2fb; border-radius: 99px; overflow: hidden; position: relative;
+  }
+  .progress .fill {
+    height: 100%; width: 0; border-radius: 99px;
+    background: linear-gradient(90deg, #ffd84d, #ff9ec7);
+    transition: width .4s ease;
+  }
+  .progress .txt { position: absolute; inset: 0; font-size: 11px; font-weight: 800; line-height: 16px; }
+  .buttons { display: flex; gap: 8px; }
+  .btn {
+    flex: 1; border: 0; border-radius: 16px; padding: 10px 8px; font: inherit; font-weight: 800; font-size: 15px;
+    background: #fff; color: var(--ink); cursor: pointer; box-shadow: 0 4px 0 #cfe3f2;
+  }
+  .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #cfe3f2; }
+  .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 4px 0 #e0709a; }
+
+  /* 棋盤 */
+  .board-wrap {
+    --size: min(92vw, 78vh, 580px);
+    width: var(--size); height: var(--size);
+    background: var(--board); border-radius: 26px; padding: 10px;
+    box-shadow: 0 8px 0 rgba(90,167,214,.4), inset 0 0 0 4px rgba(255,255,255,.6);
+  }
+  .board { position: relative; width: 100%; height: 100%; touch-action: none; }
+  .cell-bg {
+    position: absolute; width: 12.5%; height: 12.5%; padding: 3px;
+  }
+  .cell-bg::before {
+    content: ""; display: block; width: 100%; height: 100%; border-radius: 14px; background: var(--cell);
+  }
+  .tile {
+    position: absolute; left: 0; top: 0; width: 12.5%; height: 12.5%;
+    transition: transform .18s ease;
+    cursor: pointer;
+  }
+  .tile.fall { transition: transform .32s cubic-bezier(.45,.05,.55,1.35); }
+  .tile .inner { position: absolute; inset: 7%; transition: transform .15s ease; }
+  .tile svg { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 3px 0 rgba(0,0,0,.12)); }
+  .tile.selected .inner { transform: scale(1.15); animation: wiggle .5s ease-in-out infinite; }
+  .tile.hint .inner { animation: wiggle .6s ease-in-out infinite; }
+  @keyframes wiggle { 0%,100% { rotate: -6deg; } 50% { rotate: 6deg; } }
+  .tile.pop .inner { animation: pop .26s ease forwards; }
+  @keyframes pop { 40% { transform: scale(1.3); } 100% { transform: scale(0); opacity: 0; } }
+  .tile.born .inner { animation: born .35s ease; }
+  @keyframes born { 0% { transform: scale(.2) rotate(-90deg); } 70% { transform: scale(1.25); } }
+
+  .tile img.char { width: 100%; height: 100%; object-fit: contain; display: block; position: relative; filter: drop-shadow(0 3px 0 rgba(0,0,0,.12)); pointer-events: none; }
+  .badge { position: absolute; right: -10%; bottom: -8%; width: 52%; height: 52%; object-fit: contain; pointer-events: none;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,.25)); animation: peek 1.4s ease-in-out infinite; }
+  @keyframes peek { 50% { transform: translateY(-8%) rotate(6deg); } }
+  .cheer { position: absolute; width: 34%; left: 33%; top: 46%; pointer-events: none; z-index: 6;
+    animation: cheer 1s ease forwards; filter: drop-shadow(0 6px 8px rgba(0,0,0,.2)); }
+  @keyframes cheer { 0% { transform: translateY(40%) scale(.3); opacity: 0; } 30% { transform: translateY(0) scale(1.05); opacity: 1; } 75% { opacity: 1; } 100% { transform: translateY(-20%) scale(1); opacity: 0; } }
+
+  /* 特殊方塊 */
+  .fx { position: absolute; inset: -4%; pointer-events: none; border-radius: 30%; }
+  .fx.row { background: repeating-linear-gradient(0deg, transparent 0 18%, rgba(255,255,255,.85) 18% 26%); mix-blend-mode: screen; }
+  .fx.col { background: repeating-linear-gradient(90deg, transparent 0 18%, rgba(255,255,255,.85) 18% 26%); mix-blend-mode: screen; }
+  .fx.area { box-shadow: 0 0 0 3px #fff, 0 0 14px 4px #fff7a8; animation: glow 1s ease-in-out infinite; }
+  .fx.bomb { box-shadow: 0 0 16px 6px rgba(255,236,150,.9); border-radius: 50%; animation: glow 1s ease-in-out infinite; }
+  @keyframes glow { 50% { opacity: .5; } }
+
+  .particle {
+    position: absolute; width: 12px; height: 12px; border-radius: 50%; pointer-events: none;
+    animation: burst .6s ease-out forwards;
+  }
+  @keyframes burst { to { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; } }
+  .beam { position: absolute; pointer-events: none; background: linear-gradient(90deg, transparent, #fff, transparent); animation: beam .35s ease-out forwards; border-radius: 99px; }
+  .beam.v { background: linear-gradient(180deg, transparent, #fff, transparent); }
+  @keyframes beam { from { opacity: 1; } to { opacity: 0; } }
+
+  .floater {
+    position: absolute; font-weight: 900; font-size: 22px; color: #fff; pointer-events: none;
+    text-shadow: 0 2px 0 #ff6f9f, 0 0 8px rgba(255,111,159,.6);
+    animation: floatup .9s ease-out forwards; transform: translate(-50%, -50%); white-space: nowrap; z-index: 5;
+  }
+  @keyframes floatup { to { transform: translate(-50%, -140%); opacity: 0; } }
+  .combo-banner {
+    position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+    font-size: clamp(28px, 7vw, 52px); font-weight: 900; color: #fff; pointer-events: none; z-index: 6;
+    text-shadow: 0 4px 0 #ff8fb8, 0 8px 16px rgba(0,0,0,.2); animation: banner .9s ease forwards; white-space: nowrap;
+  }
+  @keyframes banner { 0% { transform: translate(-50%,-50%) scale(.3); opacity: 0; } 25% { transform: translate(-50%,-50%) scale(1.15); opacity: 1; } 75% { opacity: 1; } 100% { transform: translate(-50%,-80%) scale(1); opacity: 0; } }
+
+  /* 彈窗 */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(40, 80, 120, .45); display: none;
+    align-items: center; justify-content: center; z-index: 20; padding: 16px;
+  }
+  .overlay.show { display: flex; }
+  .dialog {
+    background: #fff; border-radius: 28px; padding: 22px 22px 18px; width: min(360px, 100%); text-align: center;
+    box-shadow: 0 10px 0 #cfe3f2; animation: dlg .4s ease;
+  }
+  @keyframes dlg { from { transform: scale(.7); opacity: 0; } }
+  .dialog h2 { margin: 4px 0 6px; font-size: 26px; }
+  .dialog p { margin: 6px 0 12px; line-height: 1.6; }
+  .dialog .mini { height: 130px; margin: 0 auto; display: block; }
+  .cast { display: flex; justify-content: center; gap: 6px; margin: 4px 0 2px; }
+  .cast figure { margin: 0; width: 25%; font-size: 12px; font-weight: 800; }
+  .cast img { width: 100%; height: 64px; object-fit: contain; display: block; }
+  .howto img { height: 22px; vertical-align: middle; }
+  .stars { font-size: 38px; letter-spacing: 6px; margin: 4px 0; }
+  .stars .off { filter: grayscale(1); opacity: .3; }
+  .howto { text-align: left; font-size: 14px; background: #f3f9fe; border-radius: 16px; padding: 10px 14px; margin: 10px 0 14px; }
+  .howto div { margin: 4px 0; }
+
+  /* 手機直向 */
+  @media (max-width: 760px), (max-aspect-ratio: 1/1) {
+    .app { flex-direction: column; gap: 10px; justify-content: flex-start; padding-top: 10px; }
+    .side { width: min(92vw, 580px); display: grid; grid-template-columns: 110px 1fr; grid-template-areas: "m t" "m s" "b b"; gap: 8px; }
+    .title { grid-area: t; font-size: 20px; text-align: left; align-self: end; }
+    .mascot-box { grid-area: m; padding: 4px; border-radius: 18px; }
+    .speech { position: absolute; left: 118px; right: -8px; top: auto; bottom: -2px; display: none; }
+    .stats { grid-area: s; padding: 8px 10px; gap: 4px; }
+    .stat .val { font-size: 18px; }
+    .buttons { grid-area: b; }
+    .btn { padding: 8px; font-size: 14px; }
+    .board-wrap { --size: min(94vw, calc(100vh - 230px), 580px); padding: 6px; border-radius: 20px; }
+    .cell-bg { padding: 2px; }
+    .cell-bg::before { border-radius: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 共用圖形 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="face">
+      <ellipse cx="37" cy="52" rx="6" ry="7" fill="#3b3048"/>
+      <ellipse cx="63" cy="52" rx="6" ry="7" fill="#3b3048"/>
+      <circle cx="39" cy="49.5" r="2.4" fill="#fff"/>
+      <circle cx="65" cy="49.5" r="2.4" fill="#fff"/>
+      <ellipse cx="27" cy="62" rx="6" ry="3.6" fill="#ff7aa8" opacity=".55"/>
+      <ellipse cx="73" cy="62" rx="6" ry="3.6" fill="#ff7aa8" opacity=".55"/>
+      <path d="M44 61 Q50 67 56 61" fill="none" stroke="#3b3048" stroke-width="3" stroke-linecap="round"/>
+    </g>
+
+    <!-- 0 粉紅小章魚 -->
+    <symbol id="t0" viewBox="0 0 100 100">
+      <path d="M18 62 Q16 12 50 12 Q84 12 82 62 L82 78 Q76 90 69 79 Q63 90 56 79 Q50 90 44 79 Q37 90 31 79 Q24 90 18 78 Z"
+            fill="#ff9ec7" stroke="#e8729f" stroke-width="3" stroke-linejoin="round"/>
+      <ellipse cx="36" cy="26" rx="10" ry="6" fill="#fff" opacity=".5"/>
+      <use href="#face" transform="translate(0,2)"/>
+    </symbol>
+    <!-- 1 黃色海星 -->
+    <symbol id="t1" viewBox="0 0 100 100">
+      <path d="M50 8 L61 36 L92 38 L68 58 L76 89 L50 72 L24 89 L32 58 L8 38 L39 36 Z"
+            fill="#ffd84d" stroke="#ffd84d" stroke-width="10" stroke-linejoin="round"/>
+      <path d="M50 8 L61 36 L92 38 L68 58 L76 89 L50 72 L24 89 L32 58 L8 38 L39 36 Z"
+            fill="none" stroke="#e8b52a" stroke-width="3" stroke-linejoin="round" transform="translate(50 50) scale(1.07) translate(-50 -50)"/>
+      <circle cx="30" cy="42" r="2.5" fill="#fff" opacity=".7"/><circle cx="70" cy="42" r="2.5" fill="#fff" opacity=".7"/>
+      <circle cx="50" cy="24" r="2.5" fill="#fff" opacity=".7"/>
+      <use href="#face" transform="translate(12.5,6) scale(.75)"/>
+    </symbol>
+    <!-- 2 藍色泡泡 -->
+    <symbol id="t2" viewBox="0 0 100 100">
+      <circle cx="50" cy="52" r="38" fill="#7ec8ff" stroke="#4fa6e6" stroke-width="3"/>
+      <path d="M26 38 Q32 24 46 21" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".85"/>
+      <circle cx="70" cy="30" r="4" fill="#fff" opacity=".8"/>
+      <use href="#face" transform="translate(0,4)"/>
+    </symbol>
+    <!-- 3 橘色扇貝 -->
+    <symbol id="t3" viewBox="0 0 100 100">
+      <path d="M50 88 L40 80 L14 50 Q16 14 50 12 Q84 14 86 50 L60 80 Z" fill="#ffab6b" stroke="#e8864a" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M50 84 L50 14 M50 84 L30 18 M50 84 L70 18 M50 84 L16 38 M50 84 L84 38" stroke="#ffc796" stroke-width="3" opacity=".8"/>
+      <rect x="38" y="80" width="24" height="10" rx="4" fill="#e8864a"/>
+      <use href="#face" transform="translate(0,-4)"/>
+    </symbol>
+    <!-- 4 綠色河豚 -->
+    <symbol id="t4" viewBox="0 0 100 100">
+      <g fill="#6cc987">
+        <path d="M50 6 L56 18 L44 18 Z"/><path d="M50 96 L56 84 L44 84 Z"/>
+        <path d="M6 50 L18 44 L18 56 Z"/><path d="M94 50 L82 44 L82 56 Z"/>
+        <path d="M18 18 L30 23 L23 30 Z"/><path d="M82 18 L70 23 L77 30 Z"/>
+        <path d="M18 82 L30 77 L23 70 Z"/><path d="M82 82 L70 77 L77 70 Z"/>
+      </g>
+      <circle cx="50" cy="51" r="34" fill="#8fe0a0" stroke="#5fbf7a" stroke-width="3"/>
+      <ellipse cx="50" cy="70" rx="22" ry="12" fill="#e9fbe9"/>
+      <use href="#face" transform="translate(0,-2)"/>
+    </symbol>
+    <!-- 5 紫色愛心 -->
+    <symbol id="t5" viewBox="0 0 100 100">
+      <path d="M50 88 C12 64 6 36 22 22 C34 12 46 18 50 28 C54 18 66 12 78 22 C94 36 88 64 50 88 Z"
+            fill="#c7a0ff" stroke="#9f74e6" stroke-width="3" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="30" rx="7" ry="4.5" fill="#fff" opacity=".6" transform="rotate(-30 30 30)"/>
+      <use href="#face" transform="translate(0,-2)"/>
+    </symbol>
+
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="side">
+    <h1 class="title">鱈魚大叔消消樂</h1>
+    <div class="mascot-box">
+      <div class="speech" id="speech">小朋友，陪大叔消一消吧！</div>
+      <div id="mascot" data-mood="normal"><div class="mascot-float">
+        <img class="pose pose-front" src="assets/cod-front.webp" alt="鱈魚大叔">
+        <img class="pose pose-side" src="assets/cod-side.webp" alt="">
+        <img class="pose pose-back" src="assets/cod-back.webp" alt="">
+      </div></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="lbl">關卡</div><div class="val" id="level">1</div></div>
+      <div class="stat"><div class="lbl">分數</div><div class="val" id="score">0</div></div>
+      <div class="stat moves"><div class="lbl">步數</div><div class="val" id="moves">0</div></div>
+      <div class="progress"><div class="fill" id="bar"></div><div class="txt" id="barTxt">0 / 0</div></div>
+    </div>
+    <div class="buttons">
+      <button class="btn" id="btnHelp">玩法</button>
+      <button class="btn" id="btnSound">🔊 音效</button>
+      <button class="btn" id="btnRestart">重來</button>
+    </div>
+  </aside>
+
+  <main class="board-wrap">
+    <div class="board" id="board"></div>
+  </main>
+</div>
+
+<div class="overlay show" id="overlay">
+  <div class="dialog" id="dialog"></div>
+</div>
+
+<script>
+(() => {
+  const N = 8, TYPES = 6, MOVES = 25;
+  const COLORS = ['#ff9ec7', '#ffd84d', '#7ec8ff', '#ffab6b', '#8fe0a0', '#c7a0ff'];
+  // 角色設定：名字想改的話改這裡就好
+  const CAST = {
+    cod:     { name: '鱈魚大叔', img: 'assets/cod-front.webp' },
+    shrimp:  { name: '蝦餅小子', img: 'assets/shrimp-cake.webp' },
+    horn:    { name: '小角角',   img: 'assets/horn-ball.webp' },
+    popcorn: { name: '糖霜米花', img: 'assets/popcorn.webp' },
+  };
+  // 預先載入圖片，避免第一次出現時閃一下
+  [...Object.values(CAST).map(c => c.img), 'assets/cod-side.webp', 'assets/cod-back.webp'].forEach(src => { new Image().src = src; });
+  const boardEl = document.getElementById('board');
+  const mascotEl = document.getElementById('mascot');
+  const speechEl = document.getElementById('speech');
+
+  let grid = [];           // grid[r][c] = { type, special, el } | null
+  let busy = false, score = 0, moves = MOVES, level = 1, target = 0;
+  let selected = null, hintTimer = null, hinted = [];
+  let soundOn = true, audioCtx = null;
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const rand = n => Math.floor(Math.random() * n);
+  const key = (r, c) => r * N + c;
+  const inside = (r, c) => r >= 0 && r < N && c >= 0 && c < N;
+
+  /* ---------- 音效 ---------- */
+  function tone(freq, dur = .12, type = 'sine', vol = .15) {
+    if (!soundOn) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(freq * 1.6, audioCtx.currentTime + dur);
+      g.gain.setValueAtTime(vol, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + dur);
+      o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + dur);
+    } catch (e) {}
+  }
+  const sfx = {
+    swap: () => tone(520, .08, 'triangle', .1),
+    bad: () => { tone(260, .12, 'square', .06); setTimeout(() => tone(200, .15, 'square', .06), 100); },
+    pop: combo => tone(440 * Math.pow(1.12, Math.min(combo, 10)), .14, 'sine', .16),
+    special: () => { tone(660, .2, 'triangle', .14); setTimeout(() => tone(990, .25, 'triangle', .12), 90); },
+    win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, .25, 'triangle', .14), i * 130)),
+    lose: () => [392, 330, 262].forEach((f, i) => setTimeout(() => tone(f, .3, 'sine', .12), i * 180)),
+  };
+
+  /* ---------- 吉祥物 ---------- */
+  let moodTimer = null;
+  function say(text, mood = 'normal', anim = 'bounce', hold = 1800) {
+    speechEl.textContent = text;
+    mascotEl.dataset.mood = mood;
+    mascotEl.classList.remove('bounce', 'shake'); void mascotEl.offsetWidth;
+    if (anim) mascotEl.classList.add(anim);
+    clearTimeout(moodTimer);
+    if (hold) moodTimer = setTimeout(() => { mascotEl.dataset.mood = 'normal'; }, hold);
+  }
+  const COMBO_LINES = ['', '', '不錯喔～', '鮮到不行！', '大叔我感動了～', '海底最強！', '無敵鱈魚拳！！'];
+
+  /* ---------- 方塊 ---------- */
+  function tileHTML(t) {
+    if (t.special === 'bomb')
+      return `<div class="inner"><div class="fx bomb"></div><img class="char" src="${CAST.cod.img}" alt="" draggable="false"></div>`;
+    const fx = t.special ? `<div class="fx ${t.special}"></div>` : '';
+    const who = t.special === 'row' || t.special === 'col' ? CAST.shrimp : t.special === 'area' ? CAST.horn : null;
+    const badge = who ? `<img class="badge" src="${who.img}" alt="" draggable="false">` : '';
+    return `<div class="inner"><svg viewBox="0 0 100 100"><use href="#t${t.type}"/></svg>${fx}${badge}</div>`;
+  }
+  function setPos(el, r, c) { el.style.transform = `translate(${c * 100}%, ${r * 100}%)`; }
+  function makeTile(type, special, r, c, startRow = r) {
+    const t = { type, special: special || null, el: document.createElement('div') };
+    t.el.className = 'tile';
+    t.el.innerHTML = tileHTML(t);
+    setPos(t.el, startRow, c);
+    boardEl.appendChild(t.el);
+    return t;
+  }
+  function refreshTile(t) { t.el.innerHTML = tileHTML(t); }
+
+  /* ---------- 棋盤邏輯 ---------- */
+  function findRuns() {
+    const runs = [];
+    const typeAt = (r, c) => { const t = grid[r][c]; return t && t.special !== 'bomb' ? t.type : -1; };
+    for (let r = 0; r < N; r++) {
+      let s = 0;
+      for (let c = 1; c <= N; c++) {
+        if (c < N && typeAt(r, c) === typeAt(r, s) && typeAt(r, s) >= 0) continue;
+        if (c - s >= 3 && typeAt(r, s) >= 0) runs.push({ dir: 'h', type: typeAt(r, s), cells: Array.from({ length: c - s }, (_, i) => [r, s + i]) });
+        s = c;
+      }
+    }
+    for (let c = 0; c < N; c++) {
+      let s = 0;
+      for (let r = 1; r <= N; r++) {
+        if (r < N && typeAt(r, c) === typeAt(s, c) && typeAt(s, c) >= 0) continue;
+        if (r - s >= 3 && typeAt(s, c) >= 0) runs.push({ dir: 'v', type: typeAt(s, c), cells: Array.from({ length: r - s }, (_, i) => [s + i, c]) });
+        s = r;
+      }
+    }
+    return runs;
+  }
+
+  function swapModel(r1, c1, r2, c2) {
+    const t = grid[r1][c1]; grid[r1][c1] = grid[r2][c2]; grid[r2][c2] = t;
+  }
+
+  function findMove() {
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      if (grid[r][c] && grid[r][c].special === 'bomb') {
+        const nb = [[r, c + 1], [r + 1, c], [r, c - 1], [r - 1, c]].find(([a, b]) => inside(a, b));
+        return [[r, c], nb];
+      }
+      for (const [dr, dc] of [[0, 1], [1, 0]]) {
+        const r2 = r + dr, c2 = c + dc;
+        if (!inside(r2, c2)) continue;
+        swapModel(r, c, r2, c2);
+        const ok = findRuns().length > 0;
+        swapModel(r, c, r2, c2);
+        if (ok) return [[r, c], [r2, c2]];
+      }
+    }
+    return null;
+  }
+
+  function randomTypes() {
+    // 產生一個沒有現成三連、但至少有一步可走的盤面
+    for (;;) {
+      const types = [];
+      for (let r = 0; r < N; r++) {
+        types.push([]);
+        for (let c = 0; c < N; c++) {
+          let t;
+          do { t = rand(TYPES); } while (
+            (c >= 2 && types[r][c - 1] === t && types[r][c - 2] === t) ||
+            (r >= 2 && types[r - 1][c] === t && types[r - 2][c] === t)
+          );
+          types[r].push(t);
+        }
+      }
+      grid = types.map(row => row.map(type => ({ type, special: null })));
+      if (findMove()) return types;
+    }
+  }
+
+  function buildBoard() {
+    boardEl.innerHTML = '';
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const bg = document.createElement('div');
+      bg.className = 'cell-bg';
+      bg.style.transform = `translate(${c * 100}%, ${r * 100}%)`;
+      boardEl.appendChild(bg);
+    }
+    const types = randomTypes();
+    grid = types.map((row, r) => row.map((type, c) => makeTile(type, null, r, c, r - N)));
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        grid[r][c].el.classList.add('fall'); setPos(grid[r][c].el, r, c);
+      }
+    }));
+  }
+
+  /* ---------- 特效 ---------- */
+  function cellCenter(r, c) { const s = boardEl.clientWidth / N; return [c * s + s / 2, r * s + s / 2]; }
+  function burst(r, c, color) {
+    const [x, y] = cellCenter(r, c);
+    for (let i = 0; i < 6; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const a = Math.random() * Math.PI * 2, d = 25 + Math.random() * 30;
+      p.style.left = x - 6 + 'px'; p.style.top = y - 6 + 'px';
+      p.style.background = i % 2 ? '#fff' : color;
+      p.style.setProperty('--dx', Math.cos(a) * d + 'px');
+      p.style.setProperty('--dy', Math.sin(a) * d + 'px');
+      boardEl.appendChild(p);
+      setTimeout(() => p.remove(), 650);
+    }
+  }
+  function beam(r, c, vertical) {
+    const b = document.createElement('div'); const s = boardEl.clientWidth / N;
+    b.className = 'beam' + (vertical ? ' v' : '');
+    if (vertical) Object.assign(b.style, { left: c * s + s * .3 + 'px', top: 0, width: s * .4 + 'px', height: '100%' });
+    else Object.assign(b.style, { top: r * s + s * .3 + 'px', left: 0, height: s * .4 + 'px', width: '100%' });
+    boardEl.appendChild(b); setTimeout(() => b.remove(), 400);
+  }
+  function floater(r, c, text) {
+    const [x, y] = cellCenter(r, c);
+    const f = document.createElement('div');
+    f.className = 'floater'; f.textContent = text; f.style.left = x + 'px'; f.style.top = y + 'px';
+    boardEl.appendChild(f); setTimeout(() => f.remove(), 950);
+  }
+  function banner(text) {
+    const b = document.createElement('div');
+    b.className = 'combo-banner'; b.textContent = text;
+    boardEl.appendChild(b); setTimeout(() => b.remove(), 950);
+  }
+  function cheer(who) {
+    const img = document.createElement('img');
+    img.className = 'cheer'; img.src = who.img; img.alt = '';
+    boardEl.appendChild(img); setTimeout(() => img.remove(), 1050);
+  }
+
+  /* ---------- 消除 ---------- */
+  async function clearCells(initial, creates, combo) {
+    // creates: Map(key -> {special, type})，這些格子不會被消掉，而是變成特殊方塊
+    const toClear = new Set(initial);
+    const queue = [...initial];
+    const triggered = new Set();
+    let usedSpecial = false;
+    while (queue.length) {
+      const k = queue.pop();
+      const r = Math.floor(k / N), c = k % N;
+      const t = grid[r][c];
+      if (!t || !t.special || triggered.has(k)) continue;
+      if (creates.has(k) && !t.special) continue;
+      triggered.add(k); usedSpecial = true;
+      const extra = [];
+      if (t.special === 'row') { beam(r, c, false); for (let i = 0; i < N; i++) extra.push([r, i]); }
+      if (t.special === 'col') { beam(r, c, true); for (let i = 0; i < N; i++) extra.push([i, c]); }
+      if (t.special === 'area') for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) extra.push([r + dr, c + dc]);
+      if (t.special === 'bomb') {
+        const tt = mostCommonType();
+        for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (grid[i][j] && grid[i][j].type === tt) extra.push([i, j]);
+      }
+      for (const [a, b] of extra) {
+        if (!inside(a, b)) continue;
+        const kk = key(a, b);
+        if (!toClear.has(kk)) { toClear.add(kk); queue.push(kk); }
+        else if (grid[a][b] && grid[a][b].special && !triggered.has(kk)) queue.push(kk);
+      }
+    }
+    if (usedSpecial) sfx.special(); else sfx.pop(combo);
+
+    let removed = 0;
+    for (const k of toClear) {
+      const r = Math.floor(k / N), c = k % N;
+      const t = grid[r][c];
+      if (!t) continue;
+      if (creates.has(k)) {
+        const cr = creates.get(k);
+        t.type = cr.type; t.special = cr.special;
+        refreshTile(t);
+        t.el.classList.remove('born'); void t.el.offsetWidth; t.el.classList.add('born');
+        removed++;
+        continue;
+      }
+      burst(r, c, COLORS[t.type] || '#ffe27a');
+      t.el.classList.add('pop');
+      removed++;
+    }
+    const gained = removed * 10 * combo + creates.size * 30;
+    score += gained;
+    const anyK = [...toClear][Math.floor(toClear.size / 2)];
+    if (anyK !== undefined) floater(Math.floor(anyK / N), anyK % N, '+' + gained);
+    updateHUD();
+    await sleep(260);
+    for (const k of toClear) {
+      if (creates.has(k)) continue;
+      const r = Math.floor(k / N), c = k % N;
+      if (grid[r][c]) { grid[r][c].el.remove(); grid[r][c] = null; }
+    }
+  }
+
+  function mostCommonType() {
+    const cnt = Array(TYPES).fill(0);
+    for (const row of grid) for (const t of row) if (t && t.type >= 0) cnt[t.type]++;
+    return cnt.indexOf(Math.max(...cnt));
+  }
+
+  async function gravity() {
+    for (let c = 0; c < N; c++) {
+      let write = N - 1;
+      for (let r = N - 1; r >= 0; r--) {
+        if (grid[r][c]) {
+          if (write !== r) { grid[write][c] = grid[r][c]; grid[r][c] = null; }
+          write--;
+        }
+      }
+      const missing = write + 1;
+      for (let r = write; r >= 0; r--) {
+        grid[r][c] = makeTile(rand(TYPES), null, r, c, r - missing);
+      }
+    }
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const el = grid[r][c].el; el.classList.add('fall'); setPos(el, r, c);
+    }
+    await sleep(340);
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) grid[r][c].el.classList.remove('fall');
+  }
+
+  async function cascade(preferred = []) {
+    let combo = 0;
+    for (;;) {
+      const runs = findRuns();
+      if (!runs.length) break;
+      combo++;
+      const clear = new Set();
+      const creates = new Map();
+      const hCells = new Map(), vCells = new Map();
+      for (const run of runs) for (const [r, c] of run.cells) {
+        clear.add(key(r, c));
+        (run.dir === 'h' ? hCells : vCells).set(key(r, c), run);
+      }
+      const pick = run => {
+        const pref = preferred.find(([r, c]) => run.cells.some(([a, b]) => a === r && b === c));
+        const [r, c] = pref || run.cells[Math.floor(run.cells.length / 2)];
+        return key(r, c);
+      };
+      const handled = new Set();
+      // 長度 5 以上 → 鱈魚大叔炸彈
+      for (const run of runs) if (run.cells.length >= 5) {
+        const k = pick(run); if (!creates.has(k)) creates.set(k, { special: 'bomb', type: -1 }); handled.add(run);
+      }
+      // L / T 形 → 範圍炸彈
+      for (const [k, hr] of hCells) {
+        const vr = vCells.get(k);
+        if (!vr || handled.has(hr) || handled.has(vr)) continue;
+        if (!creates.has(k)) creates.set(k, { special: 'area', type: hr.type });
+        handled.add(hr); handled.add(vr);
+      }
+      // 長度 4 → 直線清除
+      for (const run of runs) if (run.cells.length === 4 && !handled.has(run)) {
+        const k = pick(run);
+        if (!creates.has(k)) creates.set(k, { special: run.dir === 'h' ? 'col' : 'row', type: run.type });
+      }
+
+      if (combo >= 2) {
+        const line = COMBO_LINES[Math.min(combo, COMBO_LINES.length - 1)];
+        banner(`${combo} 連鎖！`);
+        if (combo >= 3) cheer(CAST.popcorn);
+        say(line || '好棒棒！', combo >= 4 ? 'wow' : 'happy');
+      } else if (creates.size) {
+        const s = [...creates.values()][0].special;
+        say(s === 'bomb' ? '大叔登場！交給我！' : s === 'area' ? `${CAST.horn.name}來幫忙了！砰砰砰～` : `${CAST.shrimp.name}衝啊！一條線掃光光！`, 'happy');
+      }
+      await clearCells(clear, creates, combo);
+      await gravity();
+      preferred = [];
+    }
+    return combo;
+  }
+
+  async function bombSwap(a, ra, ca, b, rb, cb) {
+    sfx.special();
+    say('鱈魚大叔出動！', 'wow');
+    const clear = new Set([key(ra, ca), key(rb, cb)]);
+    if (a.special === 'bomb' && b.special === 'bomb') {
+      banner('全場清空！');
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) clear.add(key(r, c));
+    } else {
+      const other = a.special === 'bomb' ? b : a;
+      const bombPos = a.special === 'bomb' ? [ra, ca] : [rb, cb];
+      grid[bombPos[0]][bombPos[1]].special = null; // 已經使用，不再重複觸發
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
+        if (grid[r][c] && grid[r][c].type === other.type) {
+          clear.add(key(r, c));
+          // 如果換的是直線方塊，同色的都變成直線方塊一起炸
+          if (other.special && other.special !== 'bomb' && !grid[r][c].special) {
+            grid[r][c].special = other.special; refreshTile(grid[r][c]);
+          }
+        }
+      await sleep(200);
+    }
+    await clearCells(clear, new Map(), 1);
+    await gravity();
+  }
+
+  /* ---------- 回合 ---------- */
+  async function attemptSwap(r1, c1, r2, c2) {
+    if (busy || !inside(r2, c2)) return;
+    busy = true; clearHint(); deselect();
+    const a = grid[r1][c1], b = grid[r2][c2];
+    swapModel(r1, c1, r2, c2);
+    setPos(a.el, r2, c2); setPos(b.el, r1, c1);
+    sfx.swap();
+    await sleep(190);
+
+    if (a.special === 'bomb' || b.special === 'bomb') {
+      moves--; updateHUD();
+      await bombSwap(a, r2, c2, b, r1, c1);
+      await cascade();
+    } else if (findRuns().length) {
+      moves--; updateHUD();
+      await cascade([[r2, c2], [r1, c1]]);
+    } else {
+      swapModel(r1, c1, r2, c2);
+      setPos(a.el, r1, c1); setPos(b.el, r2, c2);
+      sfx.bad();
+      say('欸…這樣不行啦', 'sad', 'shake', 1400);
+      await sleep(190);
+      busy = false; scheduleHint();
+      return;
+    }
+    await endTurn();
+  }
+
+  async function endTurn() {
+    if (score >= target) { busy = true; return winLevel(); }
+    if (moves <= 0) { busy = true; return loseLevel(); }
+    if (!findMove()) await shuffle();
+    busy = false;
+    scheduleHint();
+  }
+
+  async function shuffle() {
+    say('卡住了？大叔幫你攪一攪～', 'wow');
+    banner('重新洗牌');
+    await sleep(500);
+    const tiles = grid.flat();
+    for (;;) {
+      for (let i = tiles.length - 1; i > 0; i--) { const j = rand(i + 1); [tiles[i], tiles[j]] = [tiles[j], tiles[i]]; }
+      grid = Array.from({ length: N }, (_, r) => tiles.slice(r * N, r * N + N));
+      if (!findRuns().length && findMove()) break;
+    }
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) setPos(grid[r][c].el, r, c);
+    await sleep(300);
+  }
+
+  /* ---------- 提示 ---------- */
+  function clearHint() { clearTimeout(hintTimer); hinted.forEach(t => t.el.classList.remove('hint')); hinted = []; }
+  function scheduleHint() {
+    clearHint();
+    hintTimer = setTimeout(() => {
+      if (busy) return;
+      const m = findMove(); if (!m) return;
+      hinted = m.map(([r, c]) => grid[r][c]);
+      hinted.forEach(t => t.el.classList.add('hint'));
+      say('提示：試試看這兩個～', 'normal', null, 0);
+    }, 6000);
+  }
+
+  /* ---------- 輸入 ---------- */
+  function select(r, c) { deselect(); selected = [r, c]; grid[r][c].el.classList.add('selected'); }
+  function deselect() { if (selected) { const t = grid[selected[0]][selected[1]]; if (t) t.el.classList.remove('selected'); } selected = null; }
+
+  let down = null;
+  function cellFromEvent(e) {
+    const rect = boardEl.getBoundingClientRect(), s = rect.width / N;
+    return [Math.floor((e.clientY - rect.top) / s), Math.floor((e.clientX - rect.left) / s), s];
+  }
+  boardEl.addEventListener('pointerdown', e => {
+    if (busy) return;
+    const [r, c] = cellFromEvent(e);
+    if (!inside(r, c)) return;
+    down = { r, c, x: e.clientX, y: e.clientY, moved: false };
+    boardEl.setPointerCapture(e.pointerId);
+  });
+  boardEl.addEventListener('pointermove', e => {
+    if (!down || down.moved || busy) return;
+    const s = boardEl.getBoundingClientRect().width / N;
+    const dx = e.clientX - down.x, dy = e.clientY - down.y;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < s * .35) return;
+    down.moved = true;
+    const [dr, dc] = Math.abs(dx) > Math.abs(dy) ? [0, Math.sign(dx)] : [Math.sign(dy), 0];
+    attemptSwap(down.r, down.c, down.r + dr, down.c + dc);
+  });
+  boardEl.addEventListener('pointerup', () => {
+    if (!down) return;
+    const { r, c, moved } = down; down = null;
+    if (moved || busy) return;
+    if (selected) {
+      const [sr, sc] = selected;
+      if (Math.abs(sr - r) + Math.abs(sc - c) === 1) return attemptSwap(sr, sc, r, c);
+      if (sr === r && sc === c) return deselect();
+    }
+    select(r, c);
+  });
+  boardEl.addEventListener('pointercancel', () => { down = null; });
+
+  /* ---------- 關卡 / 介面 ---------- */
+  function updateHUD() {
+    document.getElementById('level').textContent = level;
+    document.getElementById('score').textContent = score;
+    document.getElementById('moves').textContent = moves;
+    document.getElementById('bar').style.width = Math.min(100, score / target * 100) + '%';
+    document.getElementById('barTxt').textContent = `${Math.min(score, target)} / ${target}`;
+  }
+
+  function startLevel(n) {
+    level = n; score = 0; moves = MOVES; target = 1000 + (n - 1) * 700;
+    busy = false; selected = null;
+    hideDialog(); buildBoard(); updateHUD();
+    say(n === 1 ? '小朋友，陪大叔消一消吧！' : `第 ${n} 關！目標 ${target} 分，加油～`, 'happy');
+    scheduleHint();
+  }
+
+  const mini = `<img class="mini" src="${CAST.cod.img}" alt="${CAST.cod.name}">`;
+  const miniBack = `<img class="mini" src="assets/cod-back.webp" alt="${CAST.cod.name}">`;
+  function showDialog(html) { document.getElementById('dialog').innerHTML = html; document.getElementById('overlay').classList.add('show'); }
+  function hideDialog() { document.getElementById('overlay').classList.remove('show'); }
+
+  function winLevel() {
+    clearHint(); sfx.win();
+    const ratio = moves / MOVES;
+    const stars = ratio >= .4 ? 3 : ratio >= .2 ? 2 : 1;
+    const bonus = moves * 50; score += bonus; updateHUD();
+    say('太厲害了！大叔請你吃魚丸！', 'happy', 'bounce', 0);
+    const starHTML = [1, 2, 3].map(i => `<span class="${i <= stars ? '' : 'off'}">⭐</span>`).join('');
+    showDialog(`${mini}<h2>過關啦！</h2><div class="stars">${starHTML}</div>
+      <p>分數 <b>${score}</b>（剩餘步數獎勵 +${bonus}）</p>
+      <button class="btn primary" id="next">下一關 ▶</button>`);
+    document.getElementById('next').onclick = () => startLevel(level + 1);
+  }
+  function loseLevel() {
+    clearHint(); sfx.lose();
+    say('嗚嗚…大叔的鬍子都垂下來了', 'sad', 'shake', 0);
+    showDialog(`${miniBack}<h2>步數用完了</h2><p>差一點點！還差 <b>${target - score}</b> 分<br>再試一次吧～</p>
+      <button class="btn primary" id="retry">再挑戰一次</button>`);
+    document.getElementById('retry').onclick = () => startLevel(level);
+  }
+  function helpHTML(first) {
+    const cast = Object.values(CAST).map(c => `<figure><img src="${c.img}" alt="">${c.name}</figure>`).join('');
+    return `<div class="cast">${cast}</div><h2>鱈魚大叔消消樂</h2>
+      <div class="howto">
+        <div>👆 滑動或點選兩個相鄰的海洋朋友交換位置</div>
+        <div>✨ 三個以上同樣的排成一線就會消除</div>
+        <div><img src="${CAST.shrimp.img}" alt=""> 連成 4 個 → <b>${CAST.shrimp.name}</b>，直線清除一整排</div>
+        <div><img src="${CAST.horn.img}" alt=""> 排成 L 或 T 形 → <b>${CAST.horn.name}</b>，炸開周圍 3×3</div>
+        <div><img src="${CAST.cod.img}" alt=""> 連成 5 個 → <b>${CAST.cod.name}</b>！和任何方塊交換，同色全部消光</div>
+        <div><img src="${CAST.popcorn.img}" alt=""> 連鎖 3 次以上，<b>${CAST.popcorn.name}</b>會跳出來幫你歡呼</div>
+        <div>🎯 在步數用完之前達到目標分數就過關</div>
+      </div>
+      <button class="btn primary" id="go">${first ? '開始遊戲 ▶' : '繼續玩'}</button>`;
+  }
+  function showHelp(first) {
+    showDialog(helpHTML(first));
+    document.getElementById('go').onclick = () => { first ? startLevel(1) : hideDialog(); };
+  }
+
+  document.getElementById('btnHelp').onclick = () => showHelp(false);
+  document.getElementById('btnRestart').onclick = () => { if (!busy) startLevel(level); };
+  document.getElementById('btnSound').onclick = e => { soundOn = !soundOn; e.target.textContent = soundOn ? '🔊 音效' : '🔇 靜音'; };
+
+  // 背景泡泡
+  for (let i = 0; i < 14; i++) {
+    const b = document.createElement('div');
+    const s = 8 + Math.random() * 26;
+    b.className = 'bg-bubble';
+    Object.assign(b.style, { width: s + 'px', height: s + 'px', left: Math.random() * 100 + 'vw',
+      animationDuration: 8 + Math.random() * 10 + 's', animationDelay: -Math.random() * 15 + 's' });
+    document.body.appendChild(b);
+  }
+
+  showHelp(true);
+})();
+</script>
+</body>
+</html>
