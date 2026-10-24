@@ -127,6 +127,19 @@
   .progress .pstar { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 14px; filter: grayscale(1); opacity: .45; transition: .3s; }
   .progress .pstar.on { filter: none; opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
   .hud-btns { display: flex; gap: 6px; flex: none; }
+  .hud-break { display: none; }
+  /* 道具 */
+  .boosters { display: flex; gap: 5px; flex: none; }
+  .booster { position: relative; width: 44px; height: 44px; border: 0; border-radius: 12px; background: #fff; padding: 4px;
+    box-shadow: 0 3px 0 #cfe3f2; cursor: pointer; }
+  .booster img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .booster .count { position: absolute; right: -5px; bottom: -5px; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 4px;
+    background: #ff6f9f; color: #fff; font-size: 11px; font-weight: 900; line-height: 18px; box-shadow: 0 0 0 2px #fff; }
+  .booster.active { background: #ffe1ec; box-shadow: 0 0 0 3px #ff8fb8; animation: wiggle .6s ease-in-out infinite; }
+  .booster:disabled { opacity: .4; cursor: default; }
+  .board.aiming { cursor: crosshair; }
+  .booster-gift { display: inline-flex; align-items: center; gap: 6px; background: #fff4d6; border-radius: 12px; padding: 4px 10px; font-weight: 800; }
+  .booster-gift img { width: 30px; height: 30px; }
   .icon-btn { width: 38px; height: 38px; border: 0; border-radius: 12px; background: #fff; font-size: 18px; cursor: pointer;
     box-shadow: 0 3px 0 #cfe3f2; padding: 0; }
   .icon-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #cfe3f2; }
@@ -156,16 +169,18 @@
   .tile.born .inner { animation: born .35s ease; }
   @keyframes born { 0% { transform: scale(.2) rotate(-90deg); } 70% { transform: scale(1.25); } }
 
-  /* 美乃滋（鋪在格子上）與調味料（撒在角色身上，把它黏住） */
+  /* 美乃滋（黏住角色）與調味料（撒在格子上） */
   .mayo, .season { position: absolute; left: 0; top: 0; width: 12.5%; height: 12.5%; pointer-events: none; }
-  /* 角色底下的盤子會蓋住格子，所以美乃滋網直接蓋在角色上面，從網子的空隙看得到角色 */
+  /* 美乃滋網蓋在角色上面把它黏住（從網子空隙看得到角色）；調味料撒在格子上 */
   .mayo { z-index: 2; padding: 2px; }
   .mayo img { opacity: .92; filter: drop-shadow(0 1px 1px rgba(150,110,40,.45)); }
   .season { z-index: 2; padding: 2px; }
-  .season::before { content: ""; position: absolute; inset: 3px; border-radius: 12px;
-    background: rgba(255,140,80,.22); box-shadow: inset 0 0 0 2px rgba(230,90,40,.55); }
+  .mayo::before { content: ""; position: absolute; inset: 3px; border-radius: 12px;
+    background: rgba(255,240,190,.35); box-shadow: inset 0 0 0 2px rgba(214,170,80,.7); }
   .mayo img, .season img { position: relative; width: 100%; height: 100%; display: block; }
   .season img { filter: saturate(1.4) contrast(1.15) drop-shadow(0 0 1px rgba(255,255,255,.9)); }
+  .season::before { content: ""; position: absolute; inset: 3px; border-radius: 12px;
+    background: radial-gradient(circle, rgba(255,120,60,.10), rgba(255,100,40,.22)); }
   .mayo.hit img, .season.hit img { animation: crack .25s ease; }
   .mayo.gone img, .season.gone img { animation: shatter .3s ease forwards; }
 
@@ -240,7 +255,10 @@
     .app { justify-content: flex-start; padding-top: 10px; --size: min(96vw, calc(100vh - 170px)); }
     .hud { flex-wrap: wrap; row-gap: 4px; padding: 6px 8px; }
     .avatar { width: 52px; height: 52px; }
-    .goals { order: 5; width: 100%; border-top: 1px dashed #d5e6f2; padding-top: 4px; }
+    .hud-break { display: block; order: 4; flex-basis: 100%; height: 0; border-top: 1px dashed #d5e6f2; }
+    .goals { order: 5; flex: 1; justify-content: flex-start; }
+    .boosters { order: 6; }
+    .booster { width: 40px; height: 40px; }
     .icon-btn { width: 34px; height: 34px; font-size: 16px; }
     .cell-bg { padding: 2px; }
     .cell-bg::before { border-radius: 10px; }
@@ -295,7 +313,9 @@
       <div class="hud-nums"><span class="moves"><b id="moves">0</b><small>步</small></span><span><b id="score">0</b><small>分</small></span></div>
       <div class="progress" id="progress"><div class="fill" id="bar"></div></div>
     </div>
+    <div class="hud-break"></div>
     <div class="goals" id="goals"></div>
+    <div class="boosters" id="boosters"></div>
     <div class="hud-btns">
       <button class="icon-btn" id="btnMap" title="回地圖">🗺️</button>
       <button class="icon-btn" id="btnSound" title="音效">🔊</button>
@@ -314,7 +334,7 @@
   /* ---------- 角色 ---------- */
   // 六種消除方塊：每一種都是不同角色的正面，底下墊不同顏色與形狀的盤子
   const TILES = [
-    { img: 'assets/tile-cod.webp',     color: '#ffe27a', name: '炸鱈魚' },
+    { img: 'assets/tile-cod.webp',     color: '#ffe27a', name: '無臉鱈花枝' },
     { img: 'assets/tile-shrimp.webp',  color: '#ffb3cf', name: '鱈蝦球' },
     { img: 'assets/tile-horn.webp',    color: '#9fd4ff', name: '鱈花枝' },
     { img: 'assets/tile-popcorn.webp', color: '#d5c2ff', name: '沙拉鱈花枝' },
@@ -325,17 +345,25 @@
   // 鱈魚大叔的四種表情
   const CHEF = { happy: 'assets/chef-happy.webp', angry: 'assets/chef-angry.webp', cry: 'assets/chef-cry.webp', laugh: 'assets/chef-laugh.webp' };
   const ICE_IMG = ['', 'assets/ice-1.webp', 'assets/ice-2.webp', 'assets/ice-3.webp'];
+  // 連成 5 個時的特殊方塊：閃亮鱈花枝
+  const SPECIAL_IMG = 'assets/tile-sparkle.webp', SPECIAL_NAME = '閃亮鱈花枝';
+  // 道具：都不算步數
+  const BOOSTERS = {
+    hammer: { img: 'assets/booster-hammer.webp', name: '槌子', tip: '點一格直接敲掉（冰塊敲一層）' },
+    tongs:  { img: 'assets/booster-tongs.webp',  name: '夾子', tip: '夾兩個相鄰的角色交換，不用湊成一排' },
+    fryer:  { img: 'assets/booster-fryer.webp',  name: '炸鍋', tip: '整盤翻一翻重新洗牌' },
+  };
   const MAYO_IMG = ['', 'assets/mayo-1.webp', 'assets/mayo-2.webp'];
   const SEASON_IMG = ['', 'assets/season-1.webp', 'assets/season-2.webp'];
-  [...TILES.map(t => t.img), ...Object.values(CHEF), ...ICE_IMG.slice(1), ...MAYO_IMG.slice(1), ...SEASON_IMG.slice(1), 'assets/tile-cod-side.webp', 'assets/popcorn.webp']
+  [...TILES.map(t => t.img), ...Object.values(CHEF), ...ICE_IMG.slice(1), ...MAYO_IMG.slice(1), ...SEASON_IMG.slice(1), SPECIAL_IMG, 'assets/horn-laugh.webp', ...Object.values(BOOSTERS).map(b => b.img)]
     .forEach(src => { new Image().src = src; });
 
   /* ---------- 關卡 ----------
      layout：8 行 × 8 格
        「.」一般格子　「x」沒有格子（棋盤形狀）
        「1~3」冰塊（要敲幾下）
-       「m / M」美乃滋 1 / 2 層（鋪在角色底下，在上面消除就會變薄）
-       「s / S」調味料 1 / 2 層（撒在角色身上，被黏住不能移動，消除它就清掉一層）
+       「m / M」美乃滋 1 / 2 層（黏住角色，不能移動也不會掉落；消除它就清掉一層）
+       「s / S」調味料 1 / 2 層（撒在格子上，角色能移動；在那一格消除才會變少）
      goals：score 分數 / collect 收集角色（tile 是 TILES 的編號）/ ice 冰塊 / mayo 美乃滋 / season 調味料 */
   const LEVELS = [
     { moves: 20, stars: [1500, 3000, 4500], goals: [{ type: 'score', n: 1500 }], layout: [
@@ -344,36 +372,37 @@
       'x..xx..x', '........', '........', '........', 'x......x', 'xx....xx', 'xxx..xxx', 'xxx..xxx'] },
     { moves: 20, stars: [1200, 2500, 4000], goals: [{ type: 'ice' }], layout: [
       'xxx..xxx', 'xx....xx', 'x..11..x', '..1111..', '..1111..', 'x..11..x', 'xx....xx', 'xxx..xxx'] },
-    { moves: 22, stars: [1500, 3000, 4500], goals: [{ type: 'mayo' }], layout: [
-      'xx....xx', 'xx.mm.xx', '..mmmm..', '.mmmmmm.', '.mmmmmm.', '..mmmm..', 'xx.mm.xx', 'xx....xx'] },
     { moves: 22, stars: [1500, 3000, 4500], goals: [{ type: 'season' }], layout: [
-      '........', '.s....s.', '........', '...ss...', '...ss...', '........', '.s....s.', '........'] },
+      'xx....xx', 'xx.ss.xx', '..ssss..', '.ssssss.', '.ssssss.', '..ssss..', 'xx.ss.xx', 'xx....xx'] },
+    { moves: 22, stars: [1500, 3000, 4500], goals: [{ type: 'mayo' }], layout: [
+      '........', '.m....m.', '........', '...mm...', '...mm...', '........', '.m....m.', '........'] },
     { moves: 24, stars: [2000, 3500, 5000], goals: [{ type: 'ice' }], layout: [
       '..xxxx..', '........', '.222222.', '.2....2.', '.2....2.', '.222222.', '........', '..xxxx..'] },
-    { moves: 25, stars: [2500, 4000, 5500], goals: [{ type: 'mayo' }, { type: 'collect', tile: 5, n: 15 }], layout: [
-      'MMMMMMMM', '........', 'x.MMMM.x', 'x......x', 'x......x', 'x.MMMM.x', '........', 'mmmmmmmm'] },
-    { moves: 24, stars: [2500, 4000, 5500], goals: [{ type: 'season' }, { type: 'collect', tile: 4, n: 18 }], layout: [
-      'xx....xx', 'x.S..S.x', '..S..S..', '........', '........', '..s..s..', 'x.s..s.x', 'xx....xx'] },
+    { moves: 25, stars: [2500, 4000, 5500], goals: [{ type: 'season' }, { type: 'collect', tile: 5, n: 15 }], layout: [
+      'SSSSSSSS', '........', 'x.SSSS.x', 'x......x', 'x......x', 'x.SSSS.x', '........', 'ssssssss'] },
+    { moves: 24, stars: [2500, 4000, 5500], goals: [{ type: 'mayo' }, { type: 'collect', tile: 4, n: 18 }], layout: [
+      'xx....xx', 'x.M..M.x', '..M..M..', '........', '........', '..m..m..', 'x.m..m.x', 'xx....xx'] },
     { moves: 22, stars: [4000, 5500, 7000], goals: [{ type: 'score', n: 4000 }], layout: [
       '........', '........', 'x......x', 'xx....xx', 'xx....xx', 'x......x', '........', '........'] },
-    { moves: 28, stars: [3000, 5000, 7000], goals: [{ type: 'ice' }, { type: 'mayo' }], layout: [
-      '33....33', '3......3', '..mmmm..', '..mMMm..', '..mMMm..', '..mmmm..', '3......3', '33....33'] },
-    { moves: 26, stars: [2500, 4000, 6000], goals: [{ type: 'ice' }, { type: 'season' }], layout: [
-      '...xx...', '...xx...', '.S.xx.S.', '...xx...', '...xx...', '.1.xx.1.', '...xx...', '...xx...'] },
+    { moves: 28, stars: [3000, 5000, 7000], goals: [{ type: 'ice' }, { type: 'season' }], layout: [
+      '33....33', '3......3', '..ssss..', '..sSSs..', '..sSSs..', '..ssss..', '3......3', '33....33'] },
+    { moves: 26, stars: [2500, 4000, 6000], goals: [{ type: 'ice' }, { type: 'mayo' }], layout: [
+      '...xx...', '...xx...', '.M.xx.M.', '...xx...', '...xx...', '.1.xx.1.', '...xx...', '...xx...'] },
     { moves: 28, stars: [3000, 5000, 7000], goals: [{ type: 'ice' }], layout: [
       '1.1.1.1.', '.2.2.2.2', '1.1.1.1.', 'xx....xx', 'xx....xx', '1.1.1.1.', '.2.2.2.2', '1.1.1.1.'] },
-    { moves: 28, stars: [3500, 5500, 7500], goals: [{ type: 'ice' }, { type: 'mayo' }], layout: [
-      '33333333', '22222222', 'MMMMMMMM', 'mmmmmmmm', '........', '........', '........', '........'] },
-    { moves: 30, stars: [3000, 5000, 7000], goals: [{ type: 'season' }], layout: [
-      'xx....xx', 'xx.SS.xx', '...ss...', '.SsSSsS.', '.SsSSsS.', '...ss...', 'xx.SS.xx', 'xx....xx'] },
-    { moves: 35, stars: [4000, 6500, 9000], goals: [{ type: 'ice' }, { type: 'mayo' }, { type: 'season' }], layout: [
-      '2..33..2', '.MS..SM.', '..mmmm..', '3.mMMm.3', '3.mMMm.3', '..mmmm..', '.MS..SM.', '2..33..2'] },
+    { moves: 28, stars: [3500, 5500, 7500], goals: [{ type: 'ice' }, { type: 'season' }], layout: [
+      '33333333', '22222222', 'SSSSSSSS', 'ssssssss', '........', '........', '........', '........'] },
+    { moves: 30, stars: [3000, 5000, 7000], goals: [{ type: 'mayo' }], layout: [
+      'xx....xx', 'xx.MM.xx', '...mm...', '.MmMMmM.', '.MmMMmM.', '...mm...', 'xx.MM.xx', 'xx....xx'] },
+    { moves: 35, stars: [4000, 6500, 9000], goals: [{ type: 'ice' }, { type: 'season' }, { type: 'mayo' }], layout: [
+      '2..33..2', '.SM..MS.', '..ssss..', '3.sSSs.3', '3.sSSs.3', '..ssss..', '.SM..MS.', '2..33..2'] },
   ];
 
   /* ---------- 存檔與小魚生命 ---------- */
   const MAX_LIVES = 5, REGEN_MS = 20 * 60 * 1000, SAVE_KEY = 'codUncleMatch.v1';
-  let save = { stars: [], lives: MAX_LIVES, lifeAt: Date.now() };
+  let save = { stars: [], lives: MAX_LIVES, lifeAt: Date.now(), boosters: { hammer: 3, tongs: 3, fryer: 3 } };
   try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY)) || {}); } catch (e) {}
+  save.boosters = Object.assign({ hammer: 3, tongs: 3, fryer: 3 }, save.boosters);
   function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
   function syncLives() {
     if (save.lives >= MAX_LIVES) { save.lives = MAX_LIVES; save.lifeAt = Date.now(); return; }
@@ -455,7 +484,7 @@
   /* ---------- 方塊與冰塊 ---------- */
   function tileHTML(t) {
     if (t.special === 'bomb')
-      return `<div class="inner"><div class="fx bomb"></div><img class="char" src="assets/tile-cod-side.webp" alt="" draggable="false"></div>`;
+      return `<div class="inner"><div class="fx bomb"></div><img class="char big" src="${SPECIAL_IMG}" alt="" draggable="false"></div>`;
     const d = TILES[t.type];
     const fx = t.special ? `<div class="fx ${t.special}"></div>` : '';
     return `<div class="inner"><svg class="plate" viewBox="0 0 100 100"><use href="#p${t.type}" fill="${d.color}"/></svg>` +
@@ -502,8 +531,8 @@
     }
   }
   // 不會掉落的格子：不在棋盤上、冰塊、被調味料黏住的角色
-  const isFixed = (r, c) => voids[r][c] || ice[r][c] || season[r][c];
-  const movable = (r, c) => inside(r, c) && grid[r][c] && !season[r][c];
+  const isFixed = (r, c) => voids[r][c] || ice[r][c] || mayo[r][c];
+  const movable = (r, c) => inside(r, c) && grid[r][c] && !mayo[r][c];
   const allCells = () => { const a = []; for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) a.push([r, c]); return a; };
   const tilesEach = fn => { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (grid[r][c]) fn(grid[r][c], r, c); };
 
@@ -690,10 +719,10 @@
       const t = grid[r][c];
       if (!t) continue;
       removed++;
-      if (mayo[r][c]) hitLayer('mayo', r, c);
-      if (season[r][c]) {
-        // 被調味料黏住的角色：這次只清掉一層調味料，角色留在原地
-        hitLayer('season', r, c);
+      if (season[r][c]) hitLayer('season', r, c);
+      if (mayo[r][c]) {
+        // 被美乃滋黏住的角色：這次只清掉一層美乃滋，角色留在原地
+        hitLayer('mayo', r, c);
         stuck.add(k);
         continue;
       }
@@ -764,13 +793,13 @@
         (run.dir === 'h' ? hCells : vCells).set(key(r, c), run);
       }
       const pick = run => {
-        const free = run.cells.filter(([r, c]) => !season[r][c]);
+        const free = run.cells.filter(([r, c]) => !mayo[r][c]);
         const pref = preferred.find(([r, c]) => free.some(([a, b]) => a === r && b === c));
         const [r, c] = pref || free[Math.floor(free.length / 2)] || run.cells[0];
         return key(r, c);
       };
       const handled = new Set();
-      // 長度 5 以上 → 彩虹鱈魚大叔
+      // 長度 5 以上 → 閃亮鱈花枝
       for (const run of runs) if (run.cells.length >= 5) {
         const k = pick(run); if (!creates.has(k)) creates.set(k, { special: 'bomb', type: -1 }); handled.add(run);
       }
@@ -790,12 +819,12 @@
       if (combo >= 2) {
         const line = COMBO_LINES[Math.min(combo, COMBO_LINES.length - 1)];
         banner(`${combo} 連鎖！`);
-        if (combo === 3) cheer('assets/popcorn.webp');
+        if (combo === 3) cheer('assets/horn-laugh.webp');
         if (combo >= 4) cheer(CHEF.laugh);
         say(line || '好棒棒！', combo >= 4 ? 'wow' : 'happy');
       } else if (creates.size) {
         const s = [...creates.values()][0].special;
-        say(s === 'bomb' ? '彩虹炸鱈魚登場！' : s === 'area' ? '發光炸彈！砰砰砰～' : '條紋方塊！一條線掃光光！', 'happy');
+        say(s === 'bomb' ? `${SPECIAL_NAME}登場！` : s === 'area' ? '發光炸彈！砰砰砰～' : '條紋方塊！一條線掃光光！', 'happy');
       }
       await clearCells(clear, creates, combo);
       await gravity();
@@ -806,7 +835,7 @@
 
   async function bombSwap(a, ra, ca, b, rb, cb) {
     sfx.special();
-    say('彩虹炸鱈魚出動！', 'wow');
+    say(`${SPECIAL_NAME}出動！`, 'wow');
     const clear = new Set([key(ra, ca), key(rb, cb)]);
     if (a.special === 'bomb' && b.special === 'bomb') {
       banner('全場清空！');
@@ -819,7 +848,7 @@
         if (t.type !== other.type) return;
         clear.add(key(r, c));
         // 如果換的是條紋或發光方塊，同一種的都變成一樣的特殊方塊一起炸
-        if (other.special && other.special !== 'bomb' && !t.special && !season[r][c]) { t.special = other.special; refreshTile(t); }
+        if (other.special && other.special !== 'bomb' && !t.special && !mayo[r][c]) { t.special = other.special; refreshTile(t); }
       });
       await sleep(200);
     }
@@ -830,10 +859,10 @@
   /* ---------- 回合 ---------- */
   async function attemptSwap(r1, c1, r2, c2) {
     if (busy || !inside(r2, c2) || !grid[r1][c1] || !grid[r2][c2]) return;
-    if (season[r1][c1] || season[r2][c2]) {
+    if (mayo[r1][c1] || mayo[r2][c2]) {
       sfx.bad();
-      say('被調味料黏住了！把它湊進一排就能清掉', 'angry', 'shake', 1600);
-      const t = season[r1][c1] || season[r2][c2];
+      say('被美乃滋黏住了！把它湊進一排就能清掉', 'angry', 'shake', 1600);
+      const t = mayo[r1][c1] || mayo[r2][c2];
       t.el.classList.remove('hit'); void t.el.offsetWidth; t.el.classList.add('hit');
       return;
     }
@@ -871,12 +900,12 @@
     scheduleHint();
   }
 
-  async function shuffle() {
-    say('卡住了？大叔幫你攪一攪～', 'wow');
-    banner('重新洗牌');
+  async function shuffle(msg = '卡住了？大叔幫你攪一攪～', title = '重新洗牌') {
+    say(msg, 'wow');
+    banner(title);
     await sleep(500);
     const pos = [], tiles = [];
-    tilesEach((t, r, c) => { if (!season[r][c]) { pos.push([r, c]); tiles.push(t); } });
+    tilesEach((t, r, c) => { if (!mayo[r][c]) { pos.push([r, c]); tiles.push(t); } });
     let ok = false;
     for (let tries = 0; tries < 200 && !ok; tries++) {
       for (let i = tiles.length - 1; i > 0; i--) { const j = rand(i + 1); [tiles[i], tiles[j]] = [tiles[j], tiles[i]]; }
@@ -934,6 +963,81 @@
     }, 6000);
   }
 
+  /* ---------- 道具 ---------- */
+  let boosterMode = null, tongsFirst = null;
+  function renderBoosters() {
+    const box = $('boosters');
+    box.innerHTML = Object.entries(BOOSTERS).map(([k, b]) =>
+      `<button class="booster${boosterMode === k ? ' active' : ''}" data-k="${k}" title="${b.name}：${b.tip}" ${save.boosters[k] > 0 ? '' : 'disabled'}>` +
+      `<img src="${b.img}" alt="${b.name}"><span class="count">${save.boosters[k]}</span></button>`).join('');
+    box.querySelectorAll('.booster').forEach(btn => { btn.onclick = () => toggleBooster(btn.dataset.k); });
+  }
+  function toggleBooster(k) {
+    if (busy || save.boosters[k] <= 0) return;
+    if (boosterMode === k) { cancelBooster(); say('不用了～', 'normal'); return; }
+    cancelBooster();
+    deselect(); clearHint();
+    if (k === 'fryer') return useFryer();
+    boosterMode = k;
+    boardEl.classList.add('aiming');
+    say(`${BOOSTERS[k].name}：${BOOSTERS[k].tip}`, 'normal', 'bounce', 0);
+    renderBoosters();
+  }
+  function cancelBooster() {
+    if (tongsFirst) { const t = grid[tongsFirst[0]][tongsFirst[1]]; if (t) t.el.classList.remove('selected'); }
+    boosterMode = null; tongsFirst = null;
+    boardEl.classList.remove('aiming');
+    renderBoosters();
+  }
+  function spendBooster(k) { save.boosters[k]--; persist(); }
+  function onBoosterTap(r, c) {
+    if (!inside(r, c) || voids[r][c]) return;
+    if (boosterMode === 'hammer') {
+      if (grid[r][c] || ice[r][c]) useHammer(r, c);
+      return;
+    }
+    // 夾子：先夾一個，再點旁邊的一個
+    if (!movable(r, c)) {
+      if (mayo[r][c]) say('被美乃滋黏住的夾不動喔', 'angry', 'shake', 1400);
+      return;
+    }
+    if (!tongsFirst) { tongsFirst = [r, c]; grid[r][c].el.classList.add('selected'); return; }
+    const [r1, c1] = tongsFirst;
+    grid[r1][c1].el.classList.remove('selected');
+    if (r1 === r && c1 === c) { tongsFirst = null; return; }
+    if (Math.abs(r1 - r) + Math.abs(c1 - c) === 1) { useTongs(r1, c1, r, c); return; }
+    tongsFirst = [r, c]; grid[r][c].el.classList.add('selected');
+  }
+  async function useHammer(r, c) {
+    spendBooster('hammer'); cancelBooster();
+    busy = true; clearHint();
+    say('鏘！', 'happy');
+    if (ice[r][c]) { sfx.ice(); hitLayer('ice', r, c); updateHUD(); await sleep(280); }
+    else await clearCells(new Set([key(r, c)]), new Map(), 1);
+    await gravity();
+    await cascade();
+    await endTurn();
+  }
+  async function useTongs(r1, c1, r2, c2) {
+    spendBooster('tongs'); cancelBooster();
+    busy = true; clearHint();
+    const a = grid[r1][c1], b = grid[r2][c2];
+    swapModel(r1, c1, r2, c2);
+    setPos(a.el, r2, c2); setPos(b.el, r1, c1);
+    sfx.swap();
+    await sleep(190);
+    if (a.special === 'bomb' || b.special === 'bomb') { await bombSwap(a, r2, c2, b, r1, c1); await cascade(); }
+    else if (findRuns().length) await cascade([[r2, c2], [r1, c1]]);
+    await endTurn();
+  }
+  async function useFryer() {
+    spendBooster('fryer'); renderBoosters();
+    busy = true; clearHint();
+    await shuffle('炸鍋翻一翻～', '炸鍋洗牌！');
+    busy = false;
+    scheduleHint();
+  }
+
   /* ---------- 輸入 ---------- */
   function select(r, c) { if (!grid[r][c]) return; deselect(); selected = [r, c]; grid[r][c].el.classList.add('selected'); }
   function deselect() { if (selected) { const t = grid[selected[0]][selected[1]]; if (t) t.el.classList.remove('selected'); } selected = null; }
@@ -946,6 +1050,7 @@
   boardEl.addEventListener('pointerdown', e => {
     if (busy) return;
     const [r, c] = cellFromEvent(e);
+    if (boosterMode) { onBoosterTap(r, c); return; }
     if (!inside(r, c) || !grid[r][c]) return;
     down = { r, c, x: e.clientX, y: e.clientY, moved: false };
     boardEl.setPointerCapture(e.pointerId);
@@ -1007,6 +1112,7 @@
     prog.querySelectorAll('.pstar').forEach(el => el.remove());
     L.stars.forEach(s => prog.insertAdjacentHTML('beforeend', `<span class="pstar" style="left:${Math.min(97, s / L.stars[2] * 100)}%">⭐</span>`));
     buildBoard(); updateHUD();
+    boosterMode = null; tongsFirst = null; boardEl.classList.remove('aiming'); renderBoosters();
     say(i === 0 ? '小朋友，陪大叔消一消吧！' : `第 ${i + 1} 關！加油～`, 'happy');
     scheduleHint();
   }
@@ -1044,12 +1150,19 @@
     const bonus = moves * 60; score += bonus; moves = 0; updateHUD();
     await sleep(700);
     const stars = starsFor(score);
-    save.stars[levelIdx] = Math.max(save.stars[levelIdx] || 0, stars); persist();
+    save.stars[levelIdx] = Math.max(save.stars[levelIdx] || 0, stars);
+    let gift = '';
+    if (stars === 3) {
+      const k = Object.keys(BOOSTERS)[rand(3)];
+      save.boosters[k]++;
+      gift = `<p><span class="booster-gift"><img src="${BOOSTERS[k].img}" alt="">三星獎勵：${BOOSTERS[k].name} +1</span></p>`;
+    }
+    persist();
     say('太厲害了！大叔請你吃魚丸！', 'happy', 'bounce', 0);
     const starHTML = [1, 2, 3].map(i => `<span class="${i <= stars ? '' : 'off'}">⭐</span>`).join('');
     const hasNext = levelIdx + 1 < LEVELS.length;
     showDialog(`<img class="mini" src="${CHEF.happy}" alt=""><h2>過關啦！</h2><div class="stars">${starHTML}</div>
-      <p>分數 <b>${score}</b>${bonus ? `（剩餘步數獎勵 +${bonus}）` : ''}</p>
+      <p>分數 <b>${score}</b>${bonus ? `（剩餘步數獎勵 +${bonus}）` : ''}</p>${gift}
       <div class="row"><button class="btn" id="dlgMap">🗺️ 地圖</button>
       ${hasNext ? '<button class="btn primary" id="dlgNext">下一關 ▶</button>' : ''}</div>
       ${hasNext ? '' : '<p>目前的關卡都破完了！新關卡製作中～</p>'}`);
@@ -1089,11 +1202,12 @@
         <div>✨ 三個以上同樣的排成一線就會消除</div>
         <div>🎯 在步數用完前完成關卡目標就過關</div>
         <div><img src="${ICE_IMG[3]}" alt=""> 冰塊：在旁邊消除就能敲裂，要敲 1～3 下</div>
-        <div><img src="${MAYO_IMG[2]}" alt=""> 美乃滋：蓋在格子上（角色還能移動），在那一格消除就會變薄、消失</div>
-        <div><img src="${SEASON_IMG[2]}" alt=""> 調味料：角色被黏住不能移動，把它湊進一排就能清掉一層</div>
+        <div><img src="${MAYO_IMG[2]}" alt=""> 美乃滋：角色被黏住不能移動，把它湊進一排就能清掉一層</div>
+        <div><img src="${SEASON_IMG[2]}" alt=""> 調味料：撒在格子上（角色能移動），在那一格消除就會變少、消失</div>
         <div>➖ 連成 4 個 → <b>條紋方塊</b>，直線清除一整排</div>
         <div>💥 排成 L 或 T 形 → <b>發光方塊</b>，炸開周圍 3×3</div>
-        <div><img src="assets/tile-cod-side.webp" alt=""> 連成 5 個 → <b>彩虹炸鱈魚</b>！和任何方塊交換，同一種全部消光</div>
+        <div><img src="${SPECIAL_IMG}" alt=""> 連成 5 個 → <b>${SPECIAL_NAME}</b>！和任何方塊交換，同一種全部消光</div>
+        <div>${Object.values(BOOSTERS).map(b => `<img src="${b.img}" alt="">`).join('')} 道具（不算步數）：${Object.values(BOOSTERS).map(b => `<b>${b.name}</b> ${b.tip}`).join('；')}</div>
         <div><svg viewBox="0 0 60 40" width="26" height="18" style="vertical-align:middle"><use href="#fish"/></svg> 沒過關會失去 1 隻小魚，每 20 分鐘游回 1 隻</div>
       </div>
       <button class="btn primary" id="go">知道了</button>`;
