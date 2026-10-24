@@ -78,57 +78,61 @@
   @keyframes hop { 50% { transform: translateY(-8px); } }
   .map-deco { position: absolute; pointer-events: none; opacity: .9; }
 
-  /* ===== 遊戲畫面 ===== */
+  /* ===== 遊戲畫面：上方一條資訊列，下面是盡量放大的棋盤 ===== */
   .app {
+    --size: min(96vw, calc(100vh - 112px), 760px);
     position: relative; height: 100%; z-index: 1;
-    display: flex; align-items: center; justify-content: center; gap: 24px;
-    padding: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    padding: 8px;
   }
-  .side { width: 260px; display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
-  .title { text-align: center; font-size: 24px; font-weight: 900; letter-spacing: 2px;
-    color: #fff; text-shadow: 0 3px 0 #5aa7d6, 0 5px 10px rgba(0,0,0,.15); margin: 0; }
-  .mascot-box { position: relative; background: var(--panel); border-radius: 24px; padding: 10px 8px 4px;
-    box-shadow: 0 6px 0 rgba(90,167,214,.35); }
-  .speech { position: relative; background: #fff; border-radius: 16px; padding: 8px 12px; font-weight: 700;
-    min-height: 40px; font-size: 15px; text-align: center; margin: 0 6px 4px; box-shadow: 0 2px 0 #e3eef7; }
-  .speech::after { content: ""; position: absolute; left: 38%; bottom: -10px; border: 6px solid transparent; border-top: 8px solid #fff; }
-  #mascot { position: relative; width: 100%; aspect-ratio: 1 / 1; }
-  #mascot.bounce { animation: bounce .6s ease; }
-  #mascot.shake { animation: shake .5s ease; }
-  @keyframes bounce { 0%,100% { transform: translateY(0); } 30% { transform: translateY(-14px) rotate(-3deg); } 60% { transform: translateY(0) rotate(2deg); } }
-  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
-  .mascot-float { position: absolute; inset: 0; animation: float 3s ease-in-out infinite; transform-origin: bottom center; }
-  @keyframes float { 50% { transform: translateY(-5px) scaleY(1.02); } }
-  #mascot .pose { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: none; }
-  #mascot[data-mood="normal"] .pose-front,
-  #mascot[data-mood="happy"] .pose-front,
-  #mascot[data-mood="wow"] .pose-side,
-  #mascot[data-mood="sad"] .pose-side { display: block; }
-  /* 難過時：側身、低頭、顏色變淡（不使用背面） */
-  #mascot[data-mood="sad"] .pose-side { transform: rotate(10deg) translateY(4%); filter: saturate(.55) brightness(.97); }
-
-  .stats { background: var(--panel); border-radius: 20px; padding: 10px 12px;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 6px; text-align: center; box-shadow: 0 6px 0 rgba(90,167,214,.35); }
-  .stat .lbl { font-size: 12px; opacity: .7; font-weight: 700; }
-  .stat .val { font-size: 22px; font-weight: 900; }
-  .stat.moves .val { color: #ff6f9f; }
-  .goals { grid-column: 1 / -1; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
-  .goal { position: relative; width: 52px; text-align: center; font-weight: 900; font-size: 15px; }
-  .goal img { width: 40px; height: 40px; object-fit: contain; display: block; margin: 0 auto; }
+  @supports (height: 100dvh) { .app { --size: min(96vw, calc(100dvh - 112px), 760px); } }
+  .hud {
+    position: relative; width: var(--size); display: flex; align-items: center; gap: 10px;
+    background: var(--panel); border-radius: 20px; padding: 6px 10px; box-shadow: 0 5px 0 rgba(90,167,214,.35);
+  }
+  /* 鱈魚大叔頭像：依遊戲狀況換表情 */
+  .avatar { position: relative; flex: none; width: 60px; height: 60px; border-radius: 50%; overflow: hidden;
+    background: #fff; box-shadow: 0 0 0 3px #fff, 0 2px 6px rgba(0,0,0,.18); }
+  .avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 6%; display: none; }
+  .avatar[data-mood="normal"] img[data-m="normal"], .avatar[data-mood="happy"] img[data-m="happy"],
+  .avatar[data-mood="wow"] img[data-m="happy"], .avatar[data-mood="sad"] img[data-m="sad"],
+  .avatar[data-mood="angry"] img[data-m="angry"] { display: block; }
+  .avatar.bounce { animation: bounce .6s ease; }
+  .avatar.shake { animation: shake .5s ease; }
+  @keyframes bounce { 0%,100% { transform: translateY(0); } 30% { transform: translateY(-8px) rotate(-6deg); } 60% { transform: translateY(0) rotate(4deg); } }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  /* 對話泡泡：說話時才出現，浮在棋盤上方，不佔版面 */
+  .speech { position: absolute; left: 8px; top: calc(100% + 10px); z-index: 10; max-width: min(78%, 360px);
+    background: #fff; border-radius: 14px; padding: 7px 12px; font-weight: 800; font-size: 14px;
+    box-shadow: 0 4px 12px rgba(40,80,120,.25); opacity: 0; transform: translateY(-6px); transition: .2s; pointer-events: none; }
+  .speech.show { opacity: 1; transform: none; }
+  .speech::before { content: ""; position: absolute; left: 26px; top: -12px; border: 7px solid transparent; border-bottom: 7px solid #fff; }
+  .hud-info { flex: 1; min-width: 0; }
+  .hud-title { font-size: 13px; font-weight: 900; opacity: .75; }
+  .hud-nums { display: flex; gap: 14px; align-items: baseline; }
+  .hud-nums b { font-size: 22px; font-weight: 900; }
+  .hud-nums small { font-size: 12px; font-weight: 800; opacity: .7; margin-left: 2px; }
+  .hud-nums .moves b { color: #ff6f9f; }
+  .goals { display: flex; justify-content: center; gap: 6px; }
+  .goal { position: relative; width: 46px; text-align: center; font-weight: 900; font-size: 14px; }
+  .goal img { width: 38px; height: 38px; object-fit: contain; display: block; margin: 0 auto; }
   .goal.done span { color: #27a35a; }
   .goal img.gbg { background: #ffe9d6; border-radius: 10px; box-shadow: inset 0 0 0 2px #f5c9a6; }
-  .goal .gicon { display: block; height: 40px; font-size: 30px; line-height: 40px; }
+  .goal .gicon { display: block; height: 38px; font-size: 28px; line-height: 38px; }
   .dlg-goals .goal .gicon { height: 48px; font-size: 36px; line-height: 48px; }
   .goal.bump img { animation: bump .3s ease; }
   @keyframes bump { 50% { transform: scale(1.3); } }
-  .progress { grid-column: 1 / -1; height: 16px; background: #e6f2fb; border-radius: 99px; position: relative; margin: 4px 4px 2px; }
+  .progress { height: 12px; background: #e6f2fb; border-radius: 99px; position: relative; margin: 3px 8px 2px 0; }
   .progress .fill { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #ffd84d, #ff9ec7); transition: width .4s ease; }
-  .progress .pstar { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 16px; filter: grayscale(1); opacity: .45; transition: .3s; }
+  .progress .pstar { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 14px; filter: grayscale(1); opacity: .45; transition: .3s; }
   .progress .pstar.on { filter: none; opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
-  .buttons { display: flex; gap: 8px; }
+  .hud-btns { display: flex; gap: 6px; flex: none; }
+  .icon-btn { width: 38px; height: 38px; border: 0; border-radius: 12px; background: #fff; font-size: 18px; cursor: pointer;
+    box-shadow: 0 3px 0 #cfe3f2; padding: 0; }
+  .icon-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #cfe3f2; }
 
   /* 棋盤 */
-  .board-wrap { --size: min(92vw, 78vh, 580px); width: var(--size); height: var(--size); padding: 10px; }
+  .board-wrap { width: var(--size); height: var(--size); padding: 6px; flex: none; }
   .board { position: relative; width: 100%; height: 100%; touch-action: none; }
   /* 棋盤形狀：只畫有格子的地方，外面加白邊和陰影 */
   .shape { position: absolute; inset: 0; filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 3px #fff) drop-shadow(0 6px 0 rgba(90,167,214,.4)); }
@@ -143,6 +147,7 @@
   .tile .plate use { stroke: #fff; stroke-width: 5; paint-order: stroke; }
   .tile img.char { position: absolute; left: 12%; top: 9%; width: 76%; height: 80%; object-fit: contain; pointer-events: none;
     filter: drop-shadow(0 2px 1px rgba(0,0,0,.18)); }
+  .tile img.char.big { left: 3%; top: 4%; width: 94%; height: 90%; }
   .tile.selected .inner { transform: scale(1.15); animation: wiggle .5s ease-in-out infinite; }
   .tile.hint .inner { animation: wiggle .6s ease-in-out infinite; }
   @keyframes wiggle { 0%,100% { rotate: -6deg; } 50% { rotate: 6deg; } }
@@ -230,23 +235,13 @@
   .howto { text-align: left; font-size: 14px; background: #f3f9fe; border-radius: 16px; padding: 10px 14px; margin: 10px 0 14px; }
   .howto div { margin: 4px 0; }
 
-  /* 手機直向 */
-  @media (max-width: 760px), (max-aspect-ratio: 1/1) {
-    .app { flex-direction: column; gap: 10px; justify-content: flex-start; padding-top: 10px; }
-    .side { width: min(92vw, 580px); display: grid; grid-template-columns: 96px 1fr; grid-template-areas: "m t" "m s" "b b"; gap: 8px; }
-    .title { grid-area: t; font-size: 18px; text-align: left; align-self: end; }
-    .mascot-box { grid-area: m; padding: 4px; border-radius: 18px; }
-    .speech { display: none; }
-    .stats { grid-area: s; padding: 6px 8px; gap: 2px 6px; grid-template-columns: auto auto 1fr; align-items: center; }
-    .stats .goals { grid-column: auto; grid-row: span 1; }
-    .stat .val { font-size: 17px; }
-    .stat .lbl { font-size: 11px; }
-    .goal { width: 40px; font-size: 13px; }
-    .goal img { width: 30px; height: 30px; }
-    .goal .gicon { height: 30px; font-size: 22px; line-height: 30px; }
-    .buttons { grid-area: b; }
-    .btn { padding: 8px; font-size: 14px; }
-    .board-wrap { --size: min(94vw, calc(100vh - 230px), 580px); padding: 6px; border-radius: 20px; }
+  /* 窄螢幕（手機直向）：資訊列分兩行，目標放第二行 */
+  @media (max-width: 560px) {
+    .app { justify-content: flex-start; padding-top: 10px; --size: min(96vw, calc(100vh - 170px)); }
+    .hud { flex-wrap: wrap; row-gap: 4px; padding: 6px 8px; }
+    .avatar { width: 52px; height: 52px; }
+    .goals { order: 5; width: 100%; border-top: 1px dashed #d5e6f2; padding-top: 4px; }
+    .icon-btn { width: 34px; height: 34px; font-size: 16px; }
     .cell-bg { padding: 2px; }
     .cell-bg::before { border-radius: 10px; }
   }
@@ -287,27 +282,26 @@
 
 <!-- ===== 遊戲 ===== -->
 <section class="app hidden" id="gameScreen">
-  <aside class="side">
-    <h1 class="title" id="levelTitle">第 1 關</h1>
-    <div class="mascot-box">
-      <div class="speech" id="speech">小朋友，陪大叔消一消吧！</div>
-      <div id="mascot" data-mood="normal"><div class="mascot-float">
-        <img class="pose pose-front" src="assets/cod-front.webp" alt="鱈魚大叔">
-        <img class="pose pose-side" src="assets/cod-side.webp" alt="">
-      </div></div>
+  <header class="hud">
+    <div class="avatar" id="mascot" data-mood="normal">
+      <img data-m="normal" src="assets/chef-happy.webp" alt="鱈魚大叔">
+      <img data-m="happy" src="assets/chef-laugh.webp" alt="">
+      <img data-m="sad" src="assets/chef-cry.webp" alt="">
+      <img data-m="angry" src="assets/chef-angry.webp" alt="">
     </div>
-    <div class="stats">
-      <div class="stat moves"><div class="lbl">步數</div><div class="val" id="moves">0</div></div>
-      <div class="stat"><div class="lbl">分數</div><div class="val" id="score">0</div></div>
-      <div class="goals" id="goals"></div>
+    <div class="speech" id="speech"></div>
+    <div class="hud-info">
+      <div class="hud-title" id="levelTitle">第 1 關</div>
+      <div class="hud-nums"><span class="moves"><b id="moves">0</b><small>步</small></span><span><b id="score">0</b><small>分</small></span></div>
       <div class="progress" id="progress"><div class="fill" id="bar"></div></div>
     </div>
-    <div class="buttons">
-      <button class="btn" id="btnMap">🗺️ 地圖</button>
-      <button class="btn" id="btnSound">🔊 音效</button>
-      <button class="btn" id="btnHelp">玩法</button>
+    <div class="goals" id="goals"></div>
+    <div class="hud-btns">
+      <button class="icon-btn" id="btnMap" title="回地圖">🗺️</button>
+      <button class="icon-btn" id="btnSound" title="音效">🔊</button>
+      <button class="icon-btn" id="btnHelp" title="玩法">❔</button>
     </div>
-  </aside>
+  </header>
   <main class="board-wrap"><div class="board" id="board"></div></main>
 </section>
 
@@ -320,20 +314,20 @@
   /* ---------- 角色 ---------- */
   // 六種消除方塊：每一種都是不同角色的正面，底下墊不同顏色與形狀的盤子
   const TILES = [
-    { img: 'assets/tile-cod.webp',     color: '#ffe27a', name: '鱈魚大叔' },
-    { img: 'assets/tile-shrimp.webp',  color: '#ffb3cf', name: '蝦餅小子' },
-    { img: 'assets/tile-horn.webp',    color: '#9fd4ff', name: '小角角' },
-    { img: 'assets/tile-popcorn.webp', color: '#d5c2ff', name: '糖霜米花' },
-    { img: 'assets/tile-chef.webp',    color: '#bdea8a', name: '主廚大叔' },
-    { img: 'assets/tile-root.webp',    color: '#7fdcd0', name: '牛蒡精靈' },
+    { img: 'assets/tile-cod.webp',     color: '#ffe27a', name: '炸鱈魚' },
+    { img: 'assets/tile-shrimp.webp',  color: '#ffb3cf', name: '鱈蝦球' },
+    { img: 'assets/tile-horn.webp',    color: '#9fd4ff', name: '鱈花枝' },
+    { img: 'assets/tile-popcorn.webp', color: '#d5c2ff', name: '沙拉鱈花枝' },
+    { img: 'assets/tile-chef.webp',    color: '#bdea8a', name: '鱈魚大叔' },
+    { img: 'assets/tile-root.webp',    color: '#7fdcd0', name: '牛蒡精靈', big: true },
   ];
   const COLORS = TILES.map(t => t.color);
-  // 主廚大叔的四種表情
+  // 鱈魚大叔的四種表情
   const CHEF = { happy: 'assets/chef-happy.webp', angry: 'assets/chef-angry.webp', cry: 'assets/chef-cry.webp', laugh: 'assets/chef-laugh.webp' };
   const ICE_IMG = ['', 'assets/ice-1.webp', 'assets/ice-2.webp', 'assets/ice-3.webp'];
   const MAYO_IMG = ['', 'assets/mayo-1.webp', 'assets/mayo-2.webp'];
   const SEASON_IMG = ['', 'assets/season-1.webp', 'assets/season-2.webp'];
-  [...TILES.map(t => t.img), ...Object.values(CHEF), ...ICE_IMG.slice(1), ...MAYO_IMG.slice(1), ...SEASON_IMG.slice(1), 'assets/cod-side.webp', 'assets/tile-cod-side.webp', 'assets/popcorn.webp']
+  [...TILES.map(t => t.img), ...Object.values(CHEF), ...ICE_IMG.slice(1), ...MAYO_IMG.slice(1), ...SEASON_IMG.slice(1), 'assets/tile-cod-side.webp', 'assets/popcorn.webp']
     .forEach(src => { new Image().src = src; });
 
   /* ---------- 關卡 ----------
@@ -444,9 +438,12 @@
   };
 
   /* ---------- 吉祥物 ---------- */
-  let moodTimer = null;
+  let moodTimer = null, speechTimer = null;
   function say(text, mood = 'normal', anim = 'bounce', hold = 1800) {
     speechEl.textContent = text;
+    speechEl.classList.add('show');
+    clearTimeout(speechTimer);
+    speechTimer = setTimeout(() => speechEl.classList.remove('show'), Math.max(hold, 2200));
     mascotEl.dataset.mood = mood;
     mascotEl.classList.remove('bounce', 'shake'); void mascotEl.offsetWidth;
     if (anim) mascotEl.classList.add(anim);
@@ -462,7 +459,7 @@
     const d = TILES[t.type];
     const fx = t.special ? `<div class="fx ${t.special}"></div>` : '';
     return `<div class="inner"><svg class="plate" viewBox="0 0 100 100"><use href="#p${t.type}" fill="${d.color}"/></svg>` +
-      `<img class="char" src="${d.img}" alt="" draggable="false">${fx}</div>`;
+      `<img class="char${d.big ? ' big' : ''}" src="${d.img}" alt="" draggable="false">${fx}</div>`;
   }
   function setPos(el, r, c) { el.style.transform = `translate(${c * 100}%, ${r * 100}%)`; }
   function makeTile(type, special, r, c, startRow = r) {
@@ -798,7 +795,7 @@
         say(line || '好棒棒！', combo >= 4 ? 'wow' : 'happy');
       } else if (creates.size) {
         const s = [...creates.values()][0].special;
-        say(s === 'bomb' ? '彩虹大叔登場！交給我！' : s === 'area' ? '發光炸彈！砰砰砰～' : '條紋方塊！一條線掃光光！', 'happy');
+        say(s === 'bomb' ? '彩虹炸鱈魚登場！' : s === 'area' ? '發光炸彈！砰砰砰～' : '條紋方塊！一條線掃光光！', 'happy');
       }
       await clearCells(clear, creates, combo);
       await gravity();
@@ -809,7 +806,7 @@
 
   async function bombSwap(a, ra, ca, b, rb, cb) {
     sfx.special();
-    say('鱈魚大叔出動！', 'wow');
+    say('彩虹炸鱈魚出動！', 'wow');
     const clear = new Set([key(ra, ca), key(rb, cb)]);
     if (a.special === 'bomb' && b.special === 'bomb') {
       banner('全場清空！');
@@ -835,7 +832,7 @@
     if (busy || !inside(r2, c2) || !grid[r1][c1] || !grid[r2][c2]) return;
     if (season[r1][c1] || season[r2][c2]) {
       sfx.bad();
-      say('被調味料黏住了！在旁邊湊成一排就能清掉', 'sad', 'shake', 1600);
+      say('被調味料黏住了！把它湊進一排就能清掉', 'angry', 'shake', 1600);
       const t = season[r1][c1] || season[r2][c2];
       t.el.classList.remove('hit'); void t.el.offsetWidth; t.el.classList.add('hit');
       return;
@@ -858,8 +855,7 @@
       swapModel(r1, c1, r2, c2);
       setPos(a.el, r1, c1); setPos(b.el, r2, c2);
       sfx.bad();
-      cheer(CHEF.angry, true);
-      say('欸…這樣不行啦', 'sad', 'shake', 1400);
+      say('欸…這樣不行啦', 'angry', 'shake', 1400);
       await sleep(190);
       busy = false; scheduleHint();
       return;
@@ -1093,11 +1089,11 @@
         <div>✨ 三個以上同樣的排成一線就會消除</div>
         <div>🎯 在步數用完前完成關卡目標就過關</div>
         <div><img src="${ICE_IMG[3]}" alt=""> 冰塊：在旁邊消除就能敲裂，要敲 1～3 下</div>
-        <div><img src="${MAYO_IMG[2]}" alt=""> 美乃滋：鋪在角色底下，在上面消除就會變薄、消失</div>
+        <div><img src="${MAYO_IMG[2]}" alt=""> 美乃滋：蓋在格子上（角色還能移動），在那一格消除就會變薄、消失</div>
         <div><img src="${SEASON_IMG[2]}" alt=""> 調味料：角色被黏住不能移動，把它湊進一排就能清掉一層</div>
         <div>➖ 連成 4 個 → <b>條紋方塊</b>，直線清除一整排</div>
         <div>💥 排成 L 或 T 形 → <b>發光方塊</b>，炸開周圍 3×3</div>
-        <div><img src="assets/tile-cod-side.webp" alt=""> 連成 5 個 → <b>彩虹鱈魚大叔</b>！和任何方塊交換，同一種全部消光</div>
+        <div><img src="assets/tile-cod-side.webp" alt=""> 連成 5 個 → <b>彩虹炸鱈魚</b>！和任何方塊交換，同一種全部消光</div>
         <div><svg viewBox="0 0 60 40" width="26" height="18" style="vertical-align:middle"><use href="#fish"/></svg> 沒過關會失去 1 隻小魚，每 20 分鐘游回 1 隻</div>
       </div>
       <button class="btn primary" id="go">知道了</button>`;
@@ -1132,7 +1128,7 @@
       html += `<button class="node ${cls}" data-i="${i}" style="left:${x}%;top:${y}px">${unlocked ? i + 1 : '🔒'}${starRow}</button>`;
     });
     const at = current === -1 ? n - 1 : current;
-    html += `<img class="marker" src="assets/cod-front.webp" alt="" style="left:${pts[at][0]}%;top:${pts[at][1] - 100}px">`;
+    html += `<img class="marker" src="${CHEF.happy}" alt="" style="left:${pts[at][0]}%;top:${pts[at][1] - 100}px">`;
     path.innerHTML = html;
     path.querySelectorAll('.node:not(.locked)').forEach(b => { b.onclick = () => levelIntro(+b.dataset.i); });
     const scroll = $('mapScroll');
