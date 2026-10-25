@@ -333,7 +333,7 @@
 (() => {
   const N = 8, TYPES = 6;
   // 每次更新改這裡，畫面上會顯示，方便確認是不是最新版
-  const VERSION = '2026.10.25';
+  const VERSION = '2026.10.25b';
 
   /* ---------- 角色 ---------- */
   // 六種消除方塊：每一種都是不同角色的正面，底下墊不同顏色與形狀的盤子
@@ -370,36 +370,36 @@
        「s / S」調味料 1 / 2 層（撒在格子上，角色能移動；在那一格消除才會變少）
      goals：score 分數 / collect 收集角色（tile 是 TILES 的編號）/ ice 冰塊 / mayo 美乃滋 / season 調味料 */
   const LEVELS = [
-    { moves: 20, stars: [1500, 3000, 4500], goals: [{ type: 'score', n: 1500 }], layout: [
+    { moves: 20, stars: [1000, 1500, 1900], goals: [{ type: 'score', n: 1000 }], layout: [
       'xx....xx', 'x......x', '........', '........', '........', '........', 'x......x', 'xx....xx'] },
-    { moves: 22, stars: [1500, 3000, 4500], goals: [{ type: 'collect', tile: 0, n: 15 }, { type: 'collect', tile: 1, n: 15 }], layout: [
+    { moves: 22, stars: [900, 1500, 1900], goals: [{ type: 'collect', tile: 0, n: 10 }, { type: 'collect', tile: 1, n: 10 }], layout: [
       'x..xx..x', '........', '........', '........', 'x......x', 'xx....xx', 'xxx..xxx', 'xxx..xxx'] },
-    { moves: 20, stars: [1200, 2500, 4000], goals: [{ type: 'ice' }], layout: [
+    { moves: 20, stars: [800, 1600, 2100], goals: [{ type: 'ice' }], layout: [
       'xxx..xxx', 'xx....xx', 'x..11..x', '..1111..', '..1111..', 'x..11..x', 'xx....xx', 'xxx..xxx'] },
-    { moves: 22, stars: [1500, 3000, 4500], goals: [{ type: 'season' }], layout: [
-      'xx....xx', 'xx.ss.xx', '..ssss..', '.ssssss.', '.ssssss.', '..ssss..', 'xx.ss.xx', 'xx....xx'] },
-    { moves: 22, stars: [1500, 3000, 4500], goals: [{ type: 'mayo' }], layout: [
+    { moves: 26, stars: [1000, 2000, 2600], goals: [{ type: 'season' }], layout: [
+      'xx....xx', 'xx....xx', '...ss...', '..ssss..', '..ssss..', '...ss...', 'xx....xx', 'xx....xx'] },
+    { moves: 26, stars: [1000, 2000, 2500], goals: [{ type: 'mayo' }], layout: [
       '........', '.m....m.', '........', '...mm...', '...mm...', '........', '.m....m.', '........'] },
-    { moves: 24, stars: [2000, 3500, 5000], goals: [{ type: 'ice' }], layout: [
-      '..xxxx..', '........', '.222222.', '.2....2.', '.2....2.', '.222222.', '........', '..xxxx..'] },
-    { moves: 25, stars: [2500, 4000, 5500], goals: [{ type: 'season' }, { type: 'collect', tile: 5, n: 15 }], layout: [
-      'SSSSSSSS', '........', 'x.SSSS.x', 'x......x', 'x......x', 'x.SSSS.x', '........', 'ssssssss'] },
-    { moves: 24, stars: [2500, 4000, 5500], goals: [{ type: 'mayo' }, { type: 'collect', tile: 4, n: 18 }], layout: [
-      'xx....xx', 'x.M..M.x', '..M..M..', '........', '........', '..m..m..', 'x.m..m.x', 'xx....xx'] },
-    { moves: 22, stars: [4000, 5500, 7000], goals: [{ type: 'score', n: 4000 }], layout: [
+    { moves: 30, stars: [1500, 3100, 4000], goals: [{ type: 'ice' }], layout: [
+      '..xxxx..', '........', '.222222.', '.1....1.', '.1....1.', '.222222.', '........', '..xxxx..'] },
+    { moves: 32, stars: [1500, 2700, 3400], goals: [{ type: 'season' }, { type: 'collect', tile: 5, n: 8 }], layout: [
+      '........', '........', 'x..ss..x', 'x......x', 'x......x', 'x..ss..x', '........', '..ssss..'] },
+    { moves: 28, stars: [1200, 2200, 2700], goals: [{ type: 'mayo' }, { type: 'collect', tile: 4, n: 12 }], layout: [
+      'xx....xx', 'x.m..m.x', '..m..m..', '........', '........', '..m..m..', 'x.m..m.x', 'xx....xx'] },
+    { moves: 28, stars: [1700, 2200, 2700], goals: [{ type: 'score', n: 1700 }], layout: [
       '........', '........', 'x......x', 'xx....xx', 'xx....xx', 'x......x', '........', '........'] },
-    { moves: 28, stars: [3000, 5000, 7000], goals: [{ type: 'ice' }, { type: 'season' }], layout: [
-      '33....33', '3......3', '..ssss..', '..sSSs..', '..sSSs..', '..ssss..', '3......3', '33....33'] },
-    { moves: 26, stars: [2500, 4000, 6000], goals: [{ type: 'ice' }, { type: 'mayo' }], layout: [
-      '...xx...', '...xx...', '.M.xx.M.', '...xx...', '...xx...', '.1.xx.1.', '...xx...', '...xx...'] },
-    { moves: 28, stars: [3000, 5000, 7000], goals: [{ type: 'ice' }], layout: [
-      '1.1.1.1.', '.2.2.2.2', '1.1.1.1.', 'xx....xx', 'xx....xx', '1.1.1.1.', '.2.2.2.2', '1.1.1.1.'] },
-    { moves: 28, stars: [3500, 5500, 7500], goals: [{ type: 'ice' }, { type: 'season' }], layout: [
-      '33333333', '22222222', 'SSSSSSSS', 'ssssssss', '........', '........', '........', '........'] },
-    { moves: 30, stars: [3000, 5000, 7000], goals: [{ type: 'mayo' }], layout: [
-      'xx....xx', 'xx.MM.xx', '...mm...', '.MmMMmM.', '.MmMMmM.', '...mm...', 'xx.MM.xx', 'xx....xx'] },
-    { moves: 35, stars: [4000, 6500, 9000], goals: [{ type: 'ice' }, { type: 'season' }, { type: 'mayo' }], layout: [
-      '2..33..2', '.SM..MS.', '..ssss..', '3.sSSs.3', '3.sSSs.3', '..ssss..', '.SM..MS.', '2..33..2'] },
+    { moves: 33, stars: [1600, 3200, 4000], goals: [{ type: 'ice' }, { type: 'season' }], layout: [
+      '.1....1.', '........', '..s..s..', '..ssss..', '..ssss..', '..s..s..', '........', '.1....1.'] },
+    { moves: 28, stars: [900, 1700, 2100], goals: [{ type: 'ice' }, { type: 'mayo' }], layout: [
+      '...xx...', '...xx...', '.m.xx.m.', '...xx...', '...xx...', '.1.xx.1.', '...xx...', '...xx...'] },
+    { moves: 38, stars: [1600, 3200, 4000], goals: [{ type: 'ice' }], layout: [
+      '1.1.1.1.', '........', '1.1.1.1.', 'xx....xx', 'xx....xx', '1.1.1.1.', '........', '1.1.1.1.'] },
+    { moves: 32, stars: [1500, 2900, 3700], goals: [{ type: 'ice' }, { type: 'season' }], layout: [
+      '........', '11111111', 'ssssssss', '........', '........', '........', '........', '........'] },
+    { moves: 32, stars: [1300, 2300, 2900], goals: [{ type: 'mayo' }], layout: [
+      'xx....xx', 'xx.mm.xx', '........', '.m.mm.m.', '.m.mm.m.', '........', 'xx.mm.xx', 'xx....xx'] },
+    { moves: 40, stars: [2500, 4700, 5900], goals: [{ type: 'ice' }, { type: 'season' }, { type: 'mayo' }], layout: [
+      '1..22..1', '.sm..ms.', '..ssss..', '2.ssss.2', '2.ssss.2', '..ssss..', '.sm..ms.', '1..22..1'] },
   ];
 
   /* ---------- 存檔與小魚生命 ---------- */
@@ -707,14 +707,20 @@
         else if (grid[a][b].special && !triggered.has(kk)) queue.push(kk);
       }
     }
-    // 消除旁邊的冰塊會被敲一下
+    // 消除旁邊的冰塊會被敲一下；旁邊的美乃滋也會被震掉一層（角色本身留在原地）
+    const mayoHits = new Set();
     for (const k of toClear) {
       const r = Math.floor(k / N), c = k % N;
-      for (const [a, b] of [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]]) if (inside(a, b) && ice[a][b]) iceHits.add(key(a, b));
+      for (const [a, b] of [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]]) {
+        if (!inside(a, b)) continue;
+        if (ice[a][b]) iceHits.add(key(a, b));
+        if (mayo[a][b] && !toClear.has(key(a, b))) mayoHits.add(key(a, b));
+      }
     }
     if (usedSpecial) sfx.special(); else sfx.pop(combo);
     if (iceHits.size) sfx.ice();
     for (const k of iceHits) hitLayer('ice', Math.floor(k / N), k % N);
+    for (const k of mayoHits) hitLayer('mayo', Math.floor(k / N), k % N);
 
     let removed = 0;
     const got = new Set(), stuck = new Set();
@@ -1206,7 +1212,7 @@
         <div>✨ 三個以上同樣的排成一線就會消除</div>
         <div>🎯 在步數用完前完成關卡目標就過關</div>
         <div><img src="${ICE_IMG[3]}" alt=""> 冰塊：在旁邊消除就能敲裂，要敲 1～3 下</div>
-        <div><img src="${MAYO_IMG[2]}" alt=""> 美乃滋：角色被黏住不能移動，把它湊進一排就能清掉一層</div>
+        <div><img src="${MAYO_IMG[2]}" alt=""> 美乃滋：角色被黏住不能移動，把它湊進一排、或在旁邊消除，都能清掉一層</div>
         <div><img src="${SEASON_IMG[2]}" alt=""> 調味料：撒在格子上（角色能移動），在那一格消除就會變少、消失</div>
         <div>➖ 連成 4 個 → <b>條紋方塊</b>，直線清除一整排</div>
         <div>💥 排成 L 或 T 形 → <b>發光方塊</b>，炸開周圍 3×3</div>
