@@ -147,7 +147,8 @@
 
   /* 棋盤 */
   .board-wrap { width: var(--size); height: var(--size); padding: 6px; flex: none; }
-  .board { position: relative; width: 100%; height: 100%; touch-action: none; }
+  /* 上方裁掉：新掉下來的角色從棋盤邊緣冒出來，不會飄到資訊列上 */
+  .board { position: relative; width: 100%; height: 100%; touch-action: none; clip-path: inset(-6px -12px -14px -12px); }
   /* 棋盤形狀：只畫有格子的地方，外面加白邊和陰影 */
   .shape { position: absolute; inset: 0; filter: drop-shadow(0 0 0 #fff) drop-shadow(0 0 3px #fff) drop-shadow(0 6px 0 rgba(90,167,214,.4)); }
   .cell-back { position: absolute; width: 12.5%; height: 12.5%; }
@@ -333,7 +334,7 @@
 (() => {
   const N = 8, TYPES = 6;
   // 每次更新改這裡，畫面上會顯示，方便確認是不是最新版
-  const VERSION = '2026.10.25b';
+  const VERSION = '2026.11.10';
 
   /* ---------- 角色 ---------- */
   // 六種消除方塊：每一種都是不同角色的正面，底下墊不同顏色與形狀的盤子
@@ -370,35 +371,35 @@
        「s / S」調味料 1 / 2 層（撒在格子上，角色能移動；在那一格消除才會變少）
      goals：score 分數 / collect 收集角色（tile 是 TILES 的編號）/ ice 冰塊 / mayo 美乃滋 / season 調味料 */
   const LEVELS = [
-    { moves: 20, stars: [1000, 1500, 1900], goals: [{ type: 'score', n: 1000 }], layout: [
+    { moves: 20, stars: [1000, 1800, 2300], goals: [{ type: 'score', n: 1000 }], layout: [
       'xx....xx', 'x......x', '........', '........', '........', '........', 'x......x', 'xx....xx'] },
-    { moves: 22, stars: [900, 1500, 1900], goals: [{ type: 'collect', tile: 0, n: 10 }, { type: 'collect', tile: 1, n: 10 }], layout: [
+    { moves: 22, stars: [900, 1600, 2100], goals: [{ type: 'collect', tile: 0, n: 10 }, { type: 'collect', tile: 1, n: 10 }], layout: [
       'x..xx..x', '........', '........', '........', 'x......x', 'xx....xx', 'xxx..xxx', 'xxx..xxx'] },
-    { moves: 20, stars: [800, 1600, 2100], goals: [{ type: 'ice' }], layout: [
+    { moves: 20, stars: [800, 1900, 2500], goals: [{ type: 'ice' }], layout: [
       'xxx..xxx', 'xx....xx', 'x..11..x', '..1111..', '..1111..', 'x..11..x', 'xx....xx', 'xxx..xxx'] },
-    { moves: 26, stars: [1000, 2000, 2600], goals: [{ type: 'season' }], layout: [
+    { moves: 26, stars: [1000, 2500, 3100], goals: [{ type: 'season' }], layout: [
       'xx....xx', 'xx....xx', '...ss...', '..ssss..', '..ssss..', '...ss...', 'xx....xx', 'xx....xx'] },
-    { moves: 26, stars: [1000, 2000, 2500], goals: [{ type: 'mayo' }], layout: [
+    { moves: 26, stars: [1000, 2500, 3000], goals: [{ type: 'mayo' }], layout: [
       '........', '.m....m.', '........', '...mm...', '...mm...', '........', '.m....m.', '........'] },
-    { moves: 30, stars: [1500, 3100, 4000], goals: [{ type: 'ice' }], layout: [
+    { moves: 30, stars: [1500, 3600, 4200], goals: [{ type: 'ice' }], layout: [
       '..xxxx..', '........', '.222222.', '.1....1.', '.1....1.', '.222222.', '........', '..xxxx..'] },
-    { moves: 32, stars: [1500, 2700, 3400], goals: [{ type: 'season' }, { type: 'collect', tile: 5, n: 8 }], layout: [
+    { moves: 32, stars: [1500, 3000, 3600], goals: [{ type: 'season' }, { type: 'collect', tile: 5, n: 8 }], layout: [
       '........', '........', 'x..ss..x', 'x......x', 'x......x', 'x..ss..x', '........', '..ssss..'] },
-    { moves: 28, stars: [1200, 2200, 2700], goals: [{ type: 'mayo' }, { type: 'collect', tile: 4, n: 12 }], layout: [
+    { moves: 28, stars: [1200, 2700, 3400], goals: [{ type: 'mayo' }, { type: 'collect', tile: 4, n: 12 }], layout: [
       'xx....xx', 'x.m..m.x', '..m..m..', '........', '........', '..m..m..', 'x.m..m.x', 'xx....xx'] },
-    { moves: 28, stars: [1700, 2200, 2700], goals: [{ type: 'score', n: 1700 }], layout: [
+    { moves: 28, stars: [1700, 2600, 3000], goals: [{ type: 'score', n: 1700 }], layout: [
       '........', '........', 'x......x', 'xx....xx', 'xx....xx', 'x......x', '........', '........'] },
-    { moves: 33, stars: [1600, 3200, 4000], goals: [{ type: 'ice' }, { type: 'season' }], layout: [
+    { moves: 33, stars: [1600, 3500, 4200], goals: [{ type: 'ice' }, { type: 'season' }], layout: [
       '.1....1.', '........', '..s..s..', '..ssss..', '..ssss..', '..s..s..', '........', '.1....1.'] },
-    { moves: 28, stars: [900, 1700, 2100], goals: [{ type: 'ice' }, { type: 'mayo' }], layout: [
+    { moves: 28, stars: [900, 1700, 2200], goals: [{ type: 'ice' }, { type: 'mayo' }], layout: [
       '...xx...', '...xx...', '.m.xx.m.', '...xx...', '...xx...', '.1.xx.1.', '...xx...', '...xx...'] },
-    { moves: 38, stars: [1600, 3200, 4000], goals: [{ type: 'ice' }], layout: [
+    { moves: 38, stars: [1600, 3500, 4300], goals: [{ type: 'ice' }], layout: [
       '1.1.1.1.', '........', '1.1.1.1.', 'xx....xx', 'xx....xx', '1.1.1.1.', '........', '1.1.1.1.'] },
-    { moves: 32, stars: [1500, 2900, 3700], goals: [{ type: 'ice' }, { type: 'season' }], layout: [
+    { moves: 32, stars: [1500, 3200, 4000], goals: [{ type: 'ice' }, { type: 'season' }], layout: [
       '........', '11111111', 'ssssssss', '........', '........', '........', '........', '........'] },
-    { moves: 32, stars: [1300, 2300, 2900], goals: [{ type: 'mayo' }], layout: [
+    { moves: 32, stars: [1300, 2400, 2900], goals: [{ type: 'mayo' }], layout: [
       'xx....xx', 'xx.mm.xx', '........', '.m.mm.m.', '.m.mm.m.', '........', 'xx.mm.xx', 'xx....xx'] },
-    { moves: 40, stars: [2500, 4700, 5900], goals: [{ type: 'ice' }, { type: 'season' }, { type: 'mayo' }], layout: [
+    { moves: 40, stars: [2500, 5600, 6800], goals: [{ type: 'ice' }, { type: 'season' }, { type: 'mayo' }], layout: [
       '1..22..1', '.sm..ms.', '..ssss..', '2.ssss.2', '2.ssss.2', '..ssss..', '.sm..ms.', '1..22..1'] },
   ];
 
@@ -441,7 +442,9 @@
   let selected = null, hintTimer = null, hinted = [];
   let soundOn = true, audioCtx = null;
 
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  // 過關加碼時間可以點畫面加速：timeScale 變小，所有等待就變短
+  let timeScale = 1, inBonus = false;
+  const sleep = ms => new Promise(r => setTimeout(r, ms * timeScale));
   const rand = n => Math.floor(Math.random() * n);
   const key = (r, c) => r * N + c;
   const inside = (r, c) => r >= 0 && r < N && c >= 0 && c < N;
@@ -1057,6 +1060,7 @@
     const rect = boardEl.getBoundingClientRect(), s = rect.width / N;
     return [Math.floor((e.clientY - rect.top) / s), Math.floor((e.clientX - rect.left) / s)];
   }
+  document.getElementById('gameScreen').addEventListener('pointerdown', () => { if (inBonus) timeScale = 0.2; });
   boardEl.addEventListener('pointerdown', e => {
     if (busy) return;
     const [r, c] = cellFromEvent(e);
@@ -1153,12 +1157,55 @@
     $('dlgOk').onclick = () => { hideDialog(); showScreen('map'); };
   }
 
+  /* 過關加碼時間：
+     1. 剩下的每一步，把一個隨機角色變成條紋方塊（每步 +30）
+     2. 把棋盤上所有特殊方塊依序引爆（由上而下、由左而右），連鎖也算分 */
+  async function bonusTime() {
+    inBonus = true;
+    const before = score;
+    banner('大叔加碼時間！');
+    say('剩下的步數變成特殊方塊！點畫面可以加速', 'happy', 'bounce', 0);
+    await sleep(900);
+    while (moves > 0) {
+      moves--;
+      score += 30;
+      const cands = [];
+      tilesEach((t, r, c) => { if (!t.special && t.type >= 0 && !mayo[r][c]) cands.push([r, c]); });
+      if (cands.length) {
+        const [r, c] = cands[rand(cands.length)];
+        const t = grid[r][c];
+        t.special = rand(2) ? 'row' : 'col';
+        refreshTile(t);
+        t.el.classList.remove('born'); void t.el.offsetWidth; t.el.classList.add('born');
+        floater(r, c, '+30');
+        sfx.swap();
+      }
+      updateHUD();
+      await sleep(160);
+    }
+    for (let guard = 0; guard < 80; guard++) {
+      let next = null;
+      for (let r = 0; r < N && !next; r++) for (let c = 0; c < N && !next; c++) {
+        const t = grid[r][c];
+        if (t && t.special && !mayo[r][c]) next = [r, c];
+      }
+      if (!next) break;
+      await clearCells(new Set([key(next[0], next[1])]), new Map(), 1);
+      await gravity();
+      await cascade();
+      await sleep(120);
+    }
+    inBonus = false; timeScale = 1;
+    return score - before;
+  }
+
   async function winLevel() {
     clearHint(); sfx.win();
     banner('過關！');
-    // 剩下的步數每一步加 60 分
-    const bonus = moves * 60; score += bonus; moves = 0; updateHUD();
     await sleep(700);
+    const bonus = await bonusTime();
+    sfx.win();
+    await sleep(400);
     const stars = starsFor(score);
     save.stars[levelIdx] = Math.max(save.stars[levelIdx] || 0, stars);
     let gift = '';
@@ -1172,7 +1219,7 @@
     const starHTML = [1, 2, 3].map(i => `<span class="${i <= stars ? '' : 'off'}">⭐</span>`).join('');
     const hasNext = levelIdx + 1 < LEVELS.length;
     showDialog(`<img class="mini" src="${CHEF.happy}" alt=""><h2>過關啦！</h2><div class="stars">${starHTML}</div>
-      <p>分數 <b>${score}</b>${bonus ? `（剩餘步數獎勵 +${bonus}）` : ''}</p>${gift}
+      <p>分數 <b>${score}</b>${bonus ? `（加碼時間 +${bonus}）` : ''}</p>${gift}
       <div class="row"><button class="btn" id="dlgMap">🗺️ 地圖</button>
       ${hasNext ? '<button class="btn primary" id="dlgNext">下一關 ▶</button>' : ''}</div>
       ${hasNext ? '' : '<p>目前的關卡都破完了！新關卡製作中～</p>'}`);
@@ -1218,6 +1265,7 @@
         <div>💥 排成 L 或 T 形 → <b>發光方塊</b>，炸開周圍 3×3</div>
         <div><img src="${SPECIAL_IMG}" alt=""> 連成 5 個 → <b>${SPECIAL_NAME}</b>！和任何方塊交換，同一種全部消光</div>
         <div>${Object.values(BOOSTERS).map(b => `<img src="${b.img}" alt="">`).join('')} 道具（不算步數）：${Object.values(BOOSTERS).map(b => `<b>${b.name}</b> ${b.tip}`).join('；')}</div>
+        <div>🎉 過關後是<b>加碼時間</b>：剩下的步數變成條紋方塊，棋盤上的特殊方塊會依序引爆加分</div>
         <div><svg viewBox="0 0 60 40" width="26" height="18" style="vertical-align:middle"><use href="#fish"/></svg> 沒過關會失去 1 隻小魚，每 20 分鐘游回 1 隻</div>
       </div>
       <button class="btn primary" id="go">知道了</button>
